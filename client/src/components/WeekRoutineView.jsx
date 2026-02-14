@@ -1,0 +1,726 @@
+import React, { useState, useEffect, useRef } from 'react';
+import { getRoutine, getRooms, getFaculty, getBatches, getCourses, updateBatch, addRoutineEntry, updateRoutineEntry, deleteRoutineEntry } from '../services/api';
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
+import { Download, Check, X, MapPin, Plus, Edit2, Trash } from 'lucide-react';
+import { Button } from './ui/Button';
+import toast from 'react-hot-toast';
+import { cn } from '../lib/utils';
+import { useNavigate } from 'react-router-dom';
+
+const WeekRoutineView = ({ overtimeVisibility, setOvertimeVisibility }) => {
+    const [routine, setRoutine] = useState([]);
+    const [metadata, setMetadata] = useState({ rooms: [], faculty: [], batches: [], courses: [] });
+    const [loading, setLoading] = useState(true);
+    // Removed local overtimeVisibility state, now using props
+
+    // Batch Room Editing State
+    const [editingBatchId, setEditingBatchId] = useState(null);
+    const [selectedBatchRoom, setSelectedBatchRoom] = useState('');
+
+    // Scroll Sync Refs & State
+    const tableContainerRef = useRef(null);
+    const topScrollContainerRef = useRef(null);
+    const [tableWidth, setTableWidth] = useState(0);
+
+    // Add Class Modal State
+    const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+    const [editingRoutineId, setEditingRoutineId] = useState(null);
+    const [newClassData, setNewClassData] = useState({
+        day: '',
+        time: '',
+        batchId: '',
+        courseId: '',
+        facultyId: '',
+        roomId: ''
+    });
+
+    // Multi-Class Selection Modal State
+    const [selectionModalData, setSelectionModalData] = useState(null); // { classes: [], batchId: '' }
+
+    const navigate = useNavigate();
+
+    useEffect(() => {
+        fetchData();
+    }, []);
+
+    const fetchData = async () => {
+        try {
+            const [routineRes, roomsRes, facultyRes, batchesRes, coursesRes] = await Promise.all([
+                getRoutine(),
+                getRooms(),
+                getFaculty(),
+                getBatches(),
+                getCourses()
+            ]);
+            setRoutine(routineRes.data);
+            setMetadata({
+                rooms: roomsRes.data,
+                faculty: facultyRes.data,
+                batches: batchesRes.data,
+                courses: coursesRes.data
+            });
+            setLoading(false);
+        } catch (err) {
+            console.error(err);
+            setLoading(false);
+        }
+    };
+
+    // Sync scroll position
+    useEffect(() => {
+        const table = tableContainerRef.current;
+        const top = topScrollContainerRef.current;
+
+        if (!table || !top) return;
+
+        const handleTableScroll = () => {
+            if (topScrollContainerRef.current && tableContainerRef.current) {
+                const scrollLeft = tableContainerRef.current.scrollLeft;
+                if (Math.abs(topScrollContainerRef.current.scrollLeft - scrollLeft) > 1) {
+                    topScrollContainerRef.current.scrollLeft = scrollLeft;
+                }
+            }
+        };
+
+        const handleTopScroll = () => {
+            if (tableContainerRef.current && topScrollContainerRef.current) {
+                const scrollLeft = topScrollContainerRef.current.scrollLeft;
+                if (Math.abs(tableContainerRef.current.scrollLeft - scrollLeft) > 1) {
+                    tableContainerRef.current.scrollLeft = scrollLeft;
+                }
+            }
+        };
+
+        table.addEventListener('scroll', handleTableScroll);
+        top.addEventListener('scroll', handleTopScroll);
+
+        return () => {
+            table.removeEventListener('scroll', handleTableScroll);
+            top.removeEventListener('scroll', handleTopScroll);
+        };
+    }, []);
+
+    // Sync table width to top scrollbar
+    useEffect(() => {
+        if (tableContainerRef.current) {
+            setTableWidth(tableContainerRef.current.scrollWidth);
+        }
+    }, [routine, metadata, overtimeVisibility]);
+
+    const handleBatchRoomUpdate = async (batchId) => {
+        if (!selectedBatchRoom) return;
+        const loadingToast = toast.loading('Updating Default Room...');
+        try {
+            const batch = metadata.batches.find(b => b.id === batchId);
+            if (!batch) throw new Error("Batch not found");
+
+            await updateBatch(batchId, { ...batch, default_room_id: selectedBatchRoom });
+            await fetchData();
+            toast.success('Room updated!', { id: loadingToast });
+            setEditingBatchId(null);
+        } catch (err) {
+            console.error("Update Error:", err);
+            toast.error('Failed to update room.', { id: loadingToast });
+        }
+    };
+
+    const handleAddClassClick = (day, time, batchId) => {
+        const batch = metadata.batches.find(b => b.id === batchId);
+        setEditingRoutineId(null);
+        setNewClassData({
+            day,
+            time,
+            batchId,
+            courseId: '',
+            facultyId: '',
+            roomId: batch ? batch.default_room_id || '' : ''
+        });
+        setIsAddModalOpen(true);
+    };
+
+    const handleEditClassClick = (classInfo, batchId) => {
+        // Handle array (multiple classes in one slot)
+        if (Array.isArray(classInfo)) {
+            if (classInfo.length > 1) {
+                setSelectionModalData({ classes: classInfo, batchId });
+                return;
+            }
+            classInfo = classInfo[0]; // If array of 1, just take first
+        }
+
+        setEditingRoutineId(classInfo.id);
+        setNewClassData({
+            day: classInfo.day,
+            time: classInfo.originalTime,
+            batchId: batchId,
+            courseId: classInfo.courseId,
+            facultyId: classInfo.facultyId,
+            roomId: classInfo.roomId
+        });
+        setIsAddModalOpen(true);
+    };
+
+    const handleSaveClass = async () => {
+        if (!newClassData.courseId || !newClassData.facultyId || !newClassData.roomId) {
+            toast.error('Please fill all fields');
+            return;
+        }
+
+        const loadingToast = toast.loading(editingRoutineId ? 'Updating Class...' : 'Adding Class...');
+        try {
+            if (editingRoutineId) {
+                await updateRoutineEntry(editingRoutineId, {
+                    day: newClassData.day,
+                    time: newClassData.time,
+                    batch_id: newClassData.batchId,
+                    course_id: newClassData.courseId,
+                    faculty_id: newClassData.facultyId,
+                    room_id: newClassData.roomId
+                });
+                toast.success('Class updated successfully!', { id: loadingToast });
+            } else {
+                await addRoutineEntry({
+                    day: newClassData.day,
+                    time: newClassData.time,
+                    batch_id: newClassData.batchId,
+                    course_id: newClassData.courseId,
+                    faculty_id: newClassData.facultyId,
+                    room_id: newClassData.roomId
+                });
+                toast.success('Class added successfully!', { id: loadingToast });
+            }
+            await fetchData();
+            setIsAddModalOpen(false);
+        } catch (err) {
+            console.error("Save Class Error:", err);
+            toast.error(editingRoutineId ? 'Failed to update class.' : 'Failed to add class.', { id: loadingToast });
+        }
+    };
+
+    const handleDeleteClass = async () => {
+        if (!editingRoutineId) return;
+        if (!window.confirm('Are you sure you want to delete this class?')) return;
+
+        const loadingToast = toast.loading('Deleting Class...');
+        try {
+            await deleteRoutineEntry(editingRoutineId);
+            await fetchData();
+            toast.success('Class deleted!', { id: loadingToast });
+            setIsAddModalOpen(false);
+        } catch (err) {
+            console.error("Delete Error:", err);
+            toast.error('Failed to delete class.', { id: loadingToast });
+        }
+    };
+
+    // Helper functions
+    const getRoomName = (id) => metadata.rooms.find(r => String(r.id) === String(id))?.room_number || 'TBA';
+    const getFacultyInitials = (id) => metadata.faculty.find(f => String(f.id) === String(id))?.initials || metadata.faculty.find(f => String(f.id) === String(id))?.name?.split(' ').map(n => n[0]).join('') || 'TBA';
+    const getCourseCode = (id) => {
+        // Handle composite IDs like "201-401"
+        const cleanId = String(id).split('-')[0];
+        return metadata.courses.find(c => String(c.id) === cleanId)?.code || 'TBA';
+    };
+    const getCourseCredit = (id) => {
+        const cleanId = String(id).split('-')[0];
+        return metadata.courses.find(c => String(c.id) === cleanId)?.credit || 0;
+    };
+
+    const isLabCourse = (courseId) => {
+        if (!courseId) return false;
+        const cleanId = String(courseId).split('-')[0];
+        const course = metadata.courses.find(c => String(c.id) === cleanId);
+        if (!course) return false;
+
+        // Priority 1: Check type explicitly
+        if (course.type === 'Lab' || course.type === 'Sessional') return true;
+
+        // Priority 2: Check for "Laboratory" or "Sessional" in name
+        if (course.name.toLowerCase().includes('laboratory') || course.name.toLowerCase().includes('sessional')) return true;
+
+        // Priority 3: Check Even ID rule
+        const codeParts = course.code.split('-');
+        const lastPart = codeParts[codeParts.length - 1];
+        const num = parseInt(lastPart);
+        if (!isNaN(num) && num % 2 === 0) return true;
+
+        return false;
+    };
+
+    const fullTheorySlots = [
+        "08:00-09:15", "09:15-10:30", "10:45-12:00", "12:00-01:15", "02:00-03:15", "03:15-04:30", "04:30-05:45", "05:45-07:00"
+    ];
+
+    const getVisibleSlots = (day) => {
+        return overtimeVisibility[day] ? fullTheorySlots : fullTheorySlots.slice(0, 6);
+    };
+
+    // Keep for reference if needed, but we'll use getVisibleSlots(day) mainly
+    const theorySlots = fullTheorySlots;
+
+    const labSlots = [
+        "08:00-10:30",
+        "10:45-01:15",
+        "02:00-04:30",
+        "04:30-07:00"
+    ];
+
+    const slotMapping = {
+        "08:00-09:15": "08:00-10:30",
+        "10:45-12:00": "10:45-01:15",
+        "02:00-03:15": "02:00-04:30",
+        "04:30-05:45": "04:30-07:00"
+    };
+
+    const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+
+    const renderRawCell = (batchId, timeSlot, currentDay) => {
+        // Find class for specific day
+        const specificDayRoutine = routine.filter(r => r.day === currentDay);
+        const labSlot = slotMapping[timeSlot];
+
+        // Filter all matching entries instead of finding just one
+        const classInfos = specificDayRoutine.filter(r =>
+            r.batch_id === batchId &&
+            (
+                r.time === timeSlot ||
+                (labSlot && r.time === labSlot) ||
+                r.time.replace(' ', '') === timeSlot.replace(' ', '')
+            )
+        );
+
+        if (!classInfos || classInfos.length === 0) return [];
+
+        return classInfos.map(classInfo => {
+            const isLab = isLabCourse(classInfo.course_id);
+            const credit = getCourseCredit(classInfo.course_id);
+            return {
+                id: classInfo.id,
+                course: getCourseCode(classInfo.course_id),
+                faculty: getFacultyInitials(classInfo.faculty_id),
+                room: getRoomName(classInfo.room_id),
+                courseId: classInfo.course_id,
+                roomId: classInfo.room_id,
+                facultyId: classInfo.faculty_id,
+                isLab: isLab,
+                credit: credit,
+                originalTime: classInfo.time,
+                day: currentDay
+            };
+        });
+    };
+
+    // Note: PDF download for Week View might be complex due to width, skipping for now or implementing basic version
+    const downloadPDF = () => {
+        // Placeholder or Basic implementation
+        toast.success("PDF Download not yet fully supported for Week View");
+    };
+
+    // Determine active time slots based on selected course
+    const activeTimeSlots = isLabCourse(newClassData.courseId) ? labSlots : theorySlots;
+
+    return (
+        <div className="space-y-6 flex flex-col h-[calc(100vh-140px)] overflow-x-hidden px-4 relative">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                    <h2 className="text-3xl font-bold tracking-tight text-foreground">Weekly Schedule</h2>
+                    <p className="text-muted-foreground mt-1">Full Week Overview</p>
+                </div>
+                {/* <Button variant="outline" onClick={downloadPDF}>
+                    <Download className="mr-2 h-4 w-4" />
+                    Download PDF
+                </Button> */}
+            </div>
+
+            <div className="bg-card rounded-lg border border-border shadow-sm overflow-hidden">
+                {/* Top Scrollbar */}
+                <div
+                    ref={topScrollContainerRef}
+                    className="overflow-x-auto overflow-y-hidden border-b border-border bg-muted/10"
+                    style={{ height: '14px' }}
+                >
+                    <div style={{ width: tableWidth, height: '1px' }}></div>
+                </div>
+
+                <div className="overflow-x-auto" ref={tableContainerRef}>
+                    <table className="w-full text-sm text-left border-collapse">
+                        <thead className="text-xs uppercase bg-muted/50 text-muted-foreground">
+                            <tr>
+                                <th className="px-4 py-4 w-32 font-bold border border-border !border-r-4 !border-r-slate-300 dark:!border-r-slate-600 text-center sticky left-0 bg-secondary z-20" rowSpan={2}>
+                                    Batch
+                                </th>
+                                {days.map(day => (
+                                    <th key={day} colSpan={getVisibleSlots(day).length} className="px-4 py-2 border border-border !border-r-4 !border-r-slate-300 dark:!border-r-slate-600 text-center font-bold text-lg bg-indigo-100/50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-300 min-w-[200px]">
+                                        <div className="flex items-center justify-center gap-2">
+                                            <span>{day}</span>
+                                            <button
+                                                onClick={() => setOvertimeVisibility(prev => ({ ...prev, [day]: !prev[day] }))}
+                                                className={cn(
+                                                    "ml-2 inline-flex h-4 w-7 items-center rounded-full transition-colors focus:outline-none focus:ring-1 focus:ring-indigo-500",
+                                                    overtimeVisibility[day] ? "bg-indigo-600" : "bg-muted-foreground/30"
+                                                )}
+                                                title="Toggle Overtime"
+                                            >
+                                                <span
+                                                    className={cn(
+                                                        "inline-block h-3 w-3 transform rounded-full bg-white transition-transform",
+                                                        overtimeVisibility[day] ? "translate-x-3.5" : "translate-x-0.5"
+                                                    )}
+                                                />
+                                            </button>
+                                        </div>
+                                    </th>
+                                ))}
+                            </tr>
+                            <tr>
+                                {days.map(day => (
+                                    <React.Fragment key={day}>
+                                        {getVisibleSlots(day).map((slot, index, array) => (
+                                            <th key={`${day}-${slot}`} className={cn(
+                                                "px-2 py-1 border border-border text-center min-w-[100px] whitespace-nowrap text-[10px]",
+                                                index === array.length - 1 && "!border-r-4 !border-r-slate-300 dark:!border-r-slate-600"
+                                            )}>
+                                                {slot}
+                                            </th>
+                                        ))}
+                                    </React.Fragment>
+                                ))}
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-border">
+                            {metadata.batches.map(batch => (
+                                <tr key={batch.id} className="hover:bg-muted/10">
+                                    <td className="px-4 py-3 font-semibold text-foreground border border-border !border-r-4 !border-r-slate-300 dark:!border-r-slate-600 sticky left-0 bg-card z-10 whitespace-nowrap min-w-[150px]">
+                                        <div className="text-xs text-muted-foreground">{batch.name}</div>
+                                        <div className="font-bold text-indigo-600 dark:text-indigo-400">Section {batch.section}</div>
+                                        <div
+                                            className="mt-1 flex items-center gap-1 text-[10px] text-muted-foreground bg-muted/50 px-1.5 py-0.5 rounded w-fit cursor-pointer hover:bg-indigo-100 hover:text-indigo-700 transition-colors"
+                                            onClick={() => {
+                                                setEditingBatchId(batch.id);
+                                                setSelectedBatchRoom(batch.default_room_id || '');
+                                            }}
+                                            title="Edit Default Room"
+                                        >
+                                            <MapPin className="w-3 h-3" />
+                                            {editingBatchId === batch.id ? (
+                                                <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
+                                                    <select
+                                                        className="h-5 text-[10px] bg-background border rounded"
+                                                        value={selectedBatchRoom}
+                                                        onChange={(e) => setSelectedBatchRoom(e.target.value)}
+                                                    >
+                                                        <option value="">Select</option>
+                                                        {metadata.rooms.map(r => (
+                                                            <option key={r.id} value={r.id}>{r.room_number}</option>
+                                                        ))}
+                                                    </select>
+                                                    <Check
+                                                        className="w-3 h-3 text-emerald-600 cursor-pointer hover:scale-110"
+                                                        onClick={() => handleBatchRoomUpdate(batch.id)}
+                                                    />
+                                                    <X
+                                                        className="w-3 h-3 text-red-500 cursor-pointer hover:scale-110"
+                                                        onClick={() => setEditingBatchId(null)}
+                                                    />
+                                                </div>
+                                            ) : (
+                                                <span>Room: {getRoomName(batch.default_room_id)}</span>
+                                            )}
+                                        </div>
+                                    </td>
+
+                                    {days.map(day => {
+                                        const cells = [];
+                                        let i = 0;
+                                        const currentTheorySlots = getVisibleSlots(day);
+                                        while (i < currentTheorySlots.length) {
+                                            const currentSlot = currentTheorySlots[i];
+                                            const currentData = renderRawCell(batch.id, currentSlot, day);
+                                            let colSpan = 1;
+
+                                            if (currentData && currentData.length > 0) {
+                                                // Use the first entry to determine colspan (assuming aligned slots)
+                                                const firstEntry = currentData[0];
+                                                if (firstEntry.isLab && labSlots.includes(firstEntry.originalTime)) {
+                                                    colSpan = 2;
+                                                }
+                                            }
+
+                                            // Safety check for colSpan extending beyond visible columns
+                                            if (i + colSpan > currentTheorySlots.length) {
+                                                colSpan = currentTheorySlots.length - i;
+                                            }
+
+                                            // Prepare display data directly
+                                            const displayCourses = currentData.map(d => d.course).join(' / ');
+                                            const displayFaculty = currentData.map(d => d.faculty).join(' / ');
+                                            const displayRoom = currentData.map(d => d.room).join(' / ');
+                                            const isLab = currentData.some(d => d.isLab);
+                                            const isAlt = currentData.some(d => d.credit === 0.75 || d.credit === "0.75");
+                                            const canAddSecond = currentData.length === 1 && isAlt;
+
+                                            cells.push(
+                                                <td key={currentSlot} colSpan={colSpan} className={cn(
+                                                    "px-1 py-1 border border-border text-center align-middle h-24 relative group min-w-[100px]",
+                                                    (i + colSpan) >= currentTheorySlots.length && "!border-r-4 !border-r-slate-300 dark:!border-r-slate-600"
+                                                )}>
+                                                    {currentData.length > 0 ? (
+                                                        <div
+                                                            className={cn(
+                                                                "flex flex-col items-center justify-center space-y-0.5 p-1 rounded-sm transition-colors h-full w-full relative group",
+                                                                "bg-card hover:bg-muted/50 cursor-pointer"
+                                                            )}
+                                                            onClick={() => handleEditClassClick(currentData, batch.id)}
+                                                        >
+                                                            <span className="font-bold text-foreground text-[10px] leading-[1.1]">{displayCourses}</span>
+                                                            <span className="text-[9px] text-muted-foreground bg-muted px-1 py-0 rounded">
+                                                                {displayFaculty}
+                                                            </span>
+                                                            <span className="text-[9px] font-mono text-indigo-500 font-medium">
+                                                                R-{displayRoom}
+                                                            </span>
+                                                            <div className="flex gap-1">
+                                                                {isLab && (
+                                                                    <span className="text-[8px] text-emerald-600 font-bold uppercase tracking-wider">LAB</span>
+                                                                )}
+                                                                {isAlt && (
+                                                                    <span className="text-[8px] text-orange-600 font-bold uppercase tracking-wider">ALT</span>
+                                                                )}
+                                                            </div>
+
+                                                            {/* Hover Hint / Edit Overlay */}
+                                                            <span className="absolute top-0.5 right-0.5 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
+                                                                {/* If can add second, show Plus here too or just Edit? User asked for optional add. */}
+                                                                {canAddSecond && (
+                                                                    <Button
+                                                                        variant="ghost"
+                                                                        size="icon"
+                                                                        className="h-4 w-4 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-100 rounded-full"
+                                                                        onClick={(e) => {
+                                                                            e.stopPropagation();
+                                                                            handleAddClassClick(day, currentSlot, batch.id); // Add to same slot
+                                                                        }}
+                                                                        title="Add Alternate Lab"
+                                                                    >
+                                                                        <Plus className="h-3 w-3" />
+                                                                    </Button>
+                                                                )}
+                                                                <Edit2 className="h-3 w-3 text-muted-foreground" />
+                                                            </span>
+                                                        </div>
+                                                    ) : (
+                                                        <div
+                                                            className="flex items-center justify-center w-full h-full opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer hover:bg-muted/50 rounded-sm"
+                                                            onClick={() => handleAddClassClick(day, currentSlot, batch.id)}
+                                                            title="Add Class"
+                                                        >
+                                                            <Plus className="h-4 w-4 text-muted-foreground/50 hover:text-indigo-500" />
+                                                        </div>
+                                                    )}
+                                                </td>
+                                            );
+                                            i += colSpan;
+                                        }
+                                        return cells;
+                                    })}
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            {/* Add Class Modal */}
+            {
+                isAddModalOpen && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+                        <div className="bg-card w-full max-w-md rounded-lg shadow-lg border border-border p-6 space-y-4">
+                            <div className="flex justify-between items-center">
+                                <h3 className="text-lg font-semibold flex items-center gap-2">
+                                    {editingRoutineId ? (
+                                        <>
+                                            <Edit2 className="h-4 w-4 text-indigo-500" />
+                                            Edit Class Details
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Plus className="h-4 w-4 text-emerald-500" />
+                                            Add Manual Class
+                                        </>
+                                    )}
+                                </h3>
+                                <Button variant="ghost" size="icon" onClick={() => setIsAddModalOpen(false)}>
+                                    <X className="h-4 w-4" />
+                                </Button>
+                            </div>
+                            <div className="space-y-3">
+                                <div className="grid grid-cols-2 gap-3 text-sm">
+                                    <div>
+                                        <label className="block text-muted-foreground mb-1">Day</label>
+                                        <div className="font-medium p-2 bg-muted rounded border">{newClassData.day}</div>
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium mb-1">
+                                            Time Slot
+                                            {isLabCourse(newClassData.courseId) && <span className="text-xs text-emerald-600 ml-2">(Lab Duration)</span>}
+                                        </label>
+                                        <select
+                                            className="w-full p-2 rounded-md border border-input bg-background text-sm"
+                                            value={newClassData.time}
+                                            onChange={(e) => setNewClassData({ ...newClassData, time: e.target.value })}
+                                        >
+                                            <option value="">Select Time</option>
+                                            {activeTimeSlots.map(t => <option key={t} value={t}>{t}</option>)}
+                                        </select>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium mb-1">Course</label>
+                                    <select
+                                        className="w-full p-2 rounded-md border border-input bg-background text-sm"
+                                        value={newClassData.courseId}
+                                        onChange={(e) => {
+                                            const newCourseId = e.target.value;
+                                            let newTime = newClassData.time;
+
+                                            // Intelligent Time Slot Mapping
+                                            if (newCourseId && newClassData.time) {
+                                                const isLab = isLabCourse(newCourseId);
+                                                // Case 1: Switching to Lab Course
+                                                if (isLab) {
+                                                    // Try to find a lab slot that starts at the same time
+                                                    const theoryStart = newClassData.time.split('-')[0].trim();
+                                                    const matchingLabSlot = labSlots.find(ls => ls.startsWith(theoryStart));
+
+                                                    if (matchingLabSlot) {
+                                                        newTime = matchingLabSlot;
+                                                    } else if (!labSlots.includes(newClassData.time)) {
+                                                        // If current time isn't a valid lab slot and no match found, reset or keep? 
+                                                        // RoutineView resets to '' if no match found.
+                                                        newTime = '';
+                                                    }
+                                                }
+                                                // Case 2: Switching to Theory Course
+                                                else {
+                                                    // If currently selected time is a Lab slot (longer), try to revert to standard slot
+                                                    if (labSlots.includes(newClassData.time)) {
+                                                        const labStart = newClassData.time.split('-')[0].trim();
+                                                        const matchingTheorySlot = theorySlots.find(ts => ts.startsWith(labStart));
+                                                        if (matchingTheorySlot) {
+                                                            newTime = matchingTheorySlot;
+                                                        } else {
+                                                            newTime = '';
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                            setNewClassData({ ...newClassData, courseId: newCourseId, time: newTime });
+                                        }}
+                                    >
+                                        <option value="">Select Course</option>
+                                        {metadata.courses.map(course => (
+                                            <option key={course.id} value={course.id}>{course.code} - {course.name}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium mb-1">Faculty</label>
+                                    <select
+                                        className="w-full p-2 rounded-md border border-input bg-background text-sm"
+                                        value={newClassData.facultyId}
+                                        onChange={(e) => setNewClassData({ ...newClassData, facultyId: e.target.value })}
+                                    >
+                                        <option value="">Select Faculty</option>
+                                        {metadata.faculty.map(fac => (
+                                            <option key={fac.id} value={fac.id}>{fac.name} ({fac.initials})</option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium mb-1">Room</label>
+                                    <select
+                                        className="w-full p-2 rounded-md border border-input bg-background text-sm"
+                                        value={newClassData.roomId}
+                                        onChange={(e) => setNewClassData({ ...newClassData, roomId: e.target.value })}
+                                    >
+                                        <option value="">Select Room</option>
+                                        {/* Intelligent Room Filtering */}
+                                        {metadata.rooms.filter(room => {
+                                            if (!newClassData.courseId) return true;
+
+                                            // Find course object
+                                            const courseId = String(newClassData.courseId).split('-')[0];
+                                            const course = metadata.courses.find(c => String(c.id) === courseId);
+
+                                            if (!course) return true;
+
+                                            // Exception for HUM-1142
+                                            if (course.code === 'HUM-1142' || course.code === 'Hum-1142') return true;
+
+                                            // Filter by Type
+                                            const isLab = isLabCourse(newClassData.courseId);
+                                            return isLab ? room.type === 'Lab' : room.type === 'Theory';
+                                        }).map(room => (
+                                            <option key={room.id} value={room.id}>{room.room_number}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                            </div>
+                            <div className="flex justify-between gap-2 pt-2">
+                                {editingRoutineId ? (
+                                    <Button variant="destructive" size="sm" onClick={handleDeleteClass}>
+                                        <Trash className="w-4 h-4 mr-2" />
+                                        Delete
+                                    </Button>
+                                ) : <div></div>}
+                                <div className="flex gap-2">
+                                    <Button variant="outline" onClick={() => setIsAddModalOpen(false)}>Cancel</Button>
+                                    <Button onClick={handleSaveClass}>{editingRoutineId ? 'Update Class' : 'Save Class'}</Button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )
+            }
+
+            {/* Selection Modal for Multi-Class Slots */}
+            {
+                selectionModalData && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+                        <div className="bg-card w-full max-w-sm rounded-lg shadow-lg border border-border p-6 space-y-4">
+                            <div className="flex justify-between items-center mb-2">
+                                <h3 className="text-lg font-semibold">Select Class to Edit</h3>
+                                <Button variant="ghost" size="icon" onClick={() => setSelectionModalData(null)}>
+                                    <X className="h-4 w-4" />
+                                </Button>
+                            </div>
+                            <div className="space-y-2">
+                                {selectionModalData.classes.map((cls) => (
+                                    <div
+                                        key={cls.id}
+                                        className="flex items-center justify-between p-3 rounded-md border border-border bg-muted/20 hover:bg-muted/40 transition-colors cursor-pointer"
+                                        onClick={() => {
+                                            setSelectionModalData(null);
+                                            handleEditClassClick(cls, selectionModalData.batchId);
+                                        }}
+                                    >
+                                        <div>
+                                            <div className="font-bold text-sm">{cls.course}</div>
+                                            <div className="text-xs text-muted-foreground">{cls.faculty} | R-{cls.room}</div>
+                                        </div>
+                                        <div className="p-1.5 rounded-full bg-primary/10 text-primary">
+                                            <Edit2 className="h-3.5 w-3.5" />
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                )
+            }
+        </div >
+    );
+};
+
+export default WeekRoutineView;

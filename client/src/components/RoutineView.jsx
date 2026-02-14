@@ -1,0 +1,1146 @@
+import React, { useState, useEffect } from 'react';
+import { getRoutine, addRoutineEntry, updateRoutineEntry, deleteRoutineEntry, clearRoutine, getRooms, getFaculty, getBatches, getCourses, updateBatch } from '../services/api';
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
+import { Download, Plus, Filter, Calendar, Settings, X, Check, Trash2, Edit2, MapPin } from 'lucide-react';
+import { Button } from './ui/Button';
+import { Select } from './ui/Select';
+import { Card, CardContent } from './ui/Card';
+import toast from 'react-hot-toast';
+import { cn } from '../lib/utils';
+
+const RoutineView = ({ overtimeVisibility, setOvertimeVisibility }) => {
+    const [routine, setRoutine] = useState([]);
+    const [metadata, setMetadata] = useState({ rooms: [], faculty: [], batches: [], courses: [] });
+    const [loading, setLoading] = useState(true);
+    const [selectedDay, setSelectedDay] = useState('Monday');
+    const [viewMode, setViewMode] = useState('master'); // 'master', 'section', 'batch', 'faculty'
+    const [selectedBatchId, setSelectedBatchId] = useState(''); // For Section View
+    const [selectedFacultyId, setSelectedFacultyId] = useState(''); // For Faculty View
+
+    // Removed local overtimeVisibility state, now using props
+
+    // Modal State (Unified for Add/Edit)
+    const [showModal, setShowModal] = useState(false);
+    const [editingId, setEditingId] = useState(null); // For Class Entry
+
+    // Batch Room Editing State
+    const [editingBatchId, setEditingBatchId] = useState(null);
+    const [selectedBatchRoom, setSelectedBatchRoom] = useState(''); // If null, adding new class. If set, editing this ID.
+
+    const [formData, setFormData] = useState({
+        day: 'Monday',
+        time: '08:00-09:15',
+        batch_id: '',
+        course_id: '',
+        faculty_id: '',
+        room_id: ''
+    });
+
+    // Multi-Class Selection Modal State
+    const [selectionModalData, setSelectionModalData] = useState(null); // { classes: [], batchId: '' }
+
+    useEffect(() => {
+        fetchData();
+    }, []);
+
+    const fetchData = async () => {
+        try {
+            const [routineRes, roomsRes, facultyRes, batchesRes, coursesRes] = await Promise.all([
+                getRoutine(),
+                getRooms(),
+                getFaculty(),
+                getBatches(),
+                getCourses()
+            ]);
+            setRoutine(routineRes.data);
+            setMetadata({
+                rooms: roomsRes.data,
+                faculty: facultyRes.data,
+                batches: batchesRes.data,
+                courses: coursesRes.data
+            });
+            setLoading(false);
+        } catch (err) {
+            console.error(err);
+            setLoading(false);
+        }
+    };
+
+
+
+    const resetForm = () => {
+        setFormData({
+            day: selectedDay, // Default to currently viewed day
+            time: '08:00-09:15',
+            batch_id: '', // Reset
+            course_id: '',
+            faculty_id: '',
+            room_id: ''
+        });
+        setEditingId(null);
+    };
+
+    const openAddModal = (overrides = {}) => {
+        resetForm();
+        if (overrides.batch_id || overrides.time) {
+            setFormData(prev => ({ ...prev, ...overrides }));
+        }
+        setShowModal(true);
+    };
+
+    const openEditModal = (classData) => {
+        // Handle array (multiple classes in one slot)
+        if (Array.isArray(classData)) {
+            if (classData.length > 1) {
+                // Find batchId from the first element or strictly pass it?
+                // `classData` entries have `batch_id` in them if we kept it? 
+                // Wait, `renderRawCell` returns objects with `id`, `course` etc but NOT `batchId` explicitly in the mapped object.
+                // I'll update `renderRawCell` to include batchId.
+                setSelectionModalData({ classes: classData });
+                return;
+            }
+            classData = classData[0];
+        }
+
+        if (!classData.id) {
+            toast.error("Cannot edit this class (Missing ID). Try refreshing.");
+            return;
+        }
+        setEditingId(classData.id);
+        const routineEntry = routine.find(r => r.id === classData.id);
+
+        if (routineEntry) {
+            setFormData({
+                day: routineEntry.day,
+                time: routineEntry.time,
+                batch_id: routineEntry.batch_id,
+                course_id: routineEntry.course_id,
+                faculty_id: routineEntry.faculty_id,
+                room_id: routineEntry.room_id
+            });
+        }
+        setShowModal(true);
+    };
+
+    const handleSave = async () => {
+        // Validation
+        if (!formData.batch_id || !formData.course_id || !formData.faculty_id || !formData.room_id) {
+            toast.error("Please fill all fields");
+            return;
+        }
+
+        setLoading(true);
+        const loadingToast = toast.loading(editingId ? 'Updating class...' : 'Adding class...');
+
+        try {
+            if (editingId) {
+                await updateRoutineEntry(editingId, formData);
+                toast.success('Class updated successfully!', { id: loadingToast });
+            } else {
+                await addRoutineEntry(formData);
+                toast.success('Class added successfully!', { id: loadingToast });
+            }
+            await fetchData();
+            setShowModal(false);
+            resetForm();
+        } catch (err) {
+            console.error("Save Error:", err);
+            const errorMessage = err.response?.data?.message || 'Failed to save class';
+            toast.error(errorMessage, { id: loadingToast });
+            setLoading(false);
+        }
+    };
+
+    const handleDelete = async () => {
+        if (!editingId) return;
+
+        if (!window.confirm("Are you sure you want to delete this class?")) {
+            return;
+        }
+
+        setLoading(true);
+        const loadingToast = toast.loading('Deleting class...');
+        try {
+            await deleteRoutineEntry(editingId);
+            await fetchData();
+            toast.success('Class deleted successfully!', { id: loadingToast });
+            setShowModal(false);
+            resetForm();
+        } catch (err) {
+            console.error("Delete Error:", err);
+            toast.error('Failed to delete class.', { id: loadingToast });
+            setLoading(false);
+        }
+    };
+
+    const handleBatchRoomUpdate = async (batchId) => {
+        if (!selectedBatchRoom) return;
+        const loadingToast = toast.loading('Updating Default Room...');
+        try {
+            // Find current batch to preserve other fields
+            const batch = metadata.batches.find(b => b.id === batchId);
+            if (!batch) throw new Error("Batch not found");
+
+            await updateBatch(batchId, { ...batch, default_room_id: selectedBatchRoom });
+            await fetchData();
+            toast.success('Room updated!', { id: loadingToast });
+            setEditingBatchId(null);
+        } catch (err) {
+            console.error("Update Error:", err);
+            toast.error('Failed to update room.', { id: loadingToast });
+        }
+    };
+
+    // Helper functions
+    const getRoomName = (id) => metadata.rooms.find(r => String(r.id) === String(id))?.room_number || 'TBA';
+    const getFacultyInitials = (id) => metadata.faculty.find(f => String(f.id) === String(id))?.initials || metadata.faculty.find(f => String(f.id) === String(id))?.name?.split(' ').map(n => n[0]).join('') || 'TBA';
+    const getCourseCode = (id) => {
+        // Handle composite IDs like "201-401"
+        const cleanId = String(id).split('-')[0];
+        return metadata.courses.find(c => String(c.id) === cleanId)?.code || 'TBA';
+    };
+    const getCourseCredit = (id) => {
+        const cleanId = String(id).split('-')[0];
+        return metadata.courses.find(c => String(c.id) === cleanId)?.credit || 0;
+    };
+
+    const isLabCourse = (courseId) => {
+        if (!courseId) return false;
+        const cleanId = String(courseId).split('-')[0];
+        const course = metadata.courses.find(c => String(c.id) === cleanId);
+        if (!course) return false;
+
+        // Priority 1: Check type explicitly
+        if (course.type === 'Lab' || course.type === 'Sessional') return true;
+
+        // Priority 2: Check for "Laboratory" or "Sessional" in name
+        if (course.name.toLowerCase().includes('laboratory') || course.name.toLowerCase().includes('sessional')) return true;
+
+        // Priority 3: Check Even ID rule (User Request)
+        const codeParts = course.code.split('-');
+        const lastPart = codeParts[codeParts.length - 1]; // e.g. "1102"
+        const num = parseInt(lastPart);
+        if (!isNaN(num) && num % 2 === 0) return true;
+
+        return false;
+    };
+
+    // Time Slots configuration
+    const fullTheorySlots = [
+        "08:00-09:15", "09:15-10:30", "10:45-12:00", "12:00-01:15", "02:00-03:15", "03:15-04:30", "04:30-05:45", "05:45-07:00"
+    ];
+
+    // Maintain theorySlots for compatibility
+    const theorySlots = fullTheorySlots;
+
+    const labSlots = [
+        "08:00-10:30",
+        "10:45-01:15",
+        "02:00-04:30",
+        "04:30-07:00"
+    ];
+
+    const slotMapping = {
+        "08:00-09:15": "08:00-10:30",
+        "10:45-12:00": "10:45-01:15",
+        "02:00-03:15": "02:00-04:30",
+        "04:30-05:45": "04:30-07:00"
+    };
+
+    const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+
+    // Dynamic slots based on view
+    const currentTheorySlots = (viewMode === 'section' || viewMode === 'faculty')
+        ? fullTheorySlots
+        : (overtimeVisibility[selectedDay] ? fullTheorySlots : fullTheorySlots.slice(0, 6));
+
+    const renderRawCell = (batchId, timeSlot, currentDay) => {
+        // Find class for specific day
+        const specificDayRoutine = routine.filter(r => r.day === currentDay);
+        const labSlot = slotMapping[timeSlot];
+
+        const classInfos = specificDayRoutine.filter(r =>
+            r.batch_id === batchId &&
+            (
+                r.time === timeSlot ||
+                (labSlot && r.time === labSlot) ||
+                r.time.replace(' ', '') === timeSlot.replace(' ', '')
+            )
+        );
+
+        if (!classInfos || classInfos.length === 0) return [];
+
+        return classInfos.map(classInfo => {
+            const isLab = isLabCourse(classInfo.course_id);
+            const credit = getCourseCredit(classInfo.course_id);
+
+            return {
+                id: classInfo.id,
+                course: getCourseCode(classInfo.course_id),
+                faculty: getFacultyInitials(classInfo.faculty_id),
+                room: getRoomName(classInfo.room_id),
+                courseId: classInfo.course_id,
+                facultyId: classInfo.faculty_id, // Added for context
+                roomId: classInfo.room_id,       // Added for context
+                isLab: isLab,
+                credit: credit,
+                originalTime: classInfo.time,
+                batchId: batchId // Ensure batchId is available
+            };
+        });
+    };
+
+    // Modified to use renderRawCell for consistency
+    const getCellData = (batchId, timeSlot) => renderRawCell(batchId, timeSlot, selectedDay);
+
+    const renderRowCells = (batchId) => {
+        const cells = [];
+        let i = 0;
+        while (i < currentTheorySlots.length) {
+            const currentSlot = currentTheorySlots[i];
+            const currentData = getCellData(batchId, currentSlot);
+
+            let colSpan = 1;
+
+            if (currentData && currentData.length > 0) {
+                // Use first entry for colspan
+                const firstEntry = currentData[0];
+                if (firstEntry.isLab && labSlots.includes(firstEntry.originalTime)) {
+                    colSpan = 2;
+                }
+            }
+
+            // Safety check for colSpan extending beyond visible columns
+            if (i + colSpan > currentTheorySlots.length) {
+                colSpan = currentTheorySlots.length - i;
+            }
+
+            // Prepare display data directly
+            const displayCourses = currentData.map(d => d.course).join(' / ');
+            const displayFaculty = currentData.map(d => d.faculty).join(' / ');
+            const displayRoom = currentData.map(d => d.room).join(' / ');
+            const isLab = currentData.some(d => d.isLab);
+            const isAlt = currentData.some(d => d.credit === 0.75 || d.credit === "0.75");
+            const canAddSecond = currentData.length === 1 && isAlt;
+
+            cells.push(
+                <td key={currentSlot} colSpan={colSpan} className="px-2 py-2 border-r border-border text-center align-middle h-24 relative group">
+                    {currentData.length > 0 ? (
+                        <div
+                            className={cn(
+                                "flex flex-col items-center justify-center space-y-1 cursor-pointer hover:bg-muted/50 p-2 rounded-md transition-colors h-full w-full relative group"
+                            )}
+                            onClick={() => openEditModal(currentData)}
+                        >
+                            <span className="font-bold text-foreground text-sm">{displayCourses}</span>
+                            <span className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
+                                {displayFaculty}
+                            </span>
+                            <span className="text-xs font-mono text-indigo-500 font-medium">
+                                R-{displayRoom}
+                            </span>
+                            <div className="flex gap-1 justify-center mt-1">
+                                {isLab && (
+                                    <span className="text-[10px] text-emerald-600 font-bold uppercase tracking-wider">LAB</span>
+                                )}
+                                {isAlt && (
+                                    <span className="text-[10px] text-orange-600 font-bold uppercase tracking-wider">ALT</span>
+                                )}
+                            </div>
+
+                            {/* Hover Hint & Add Second Button */}
+                            <span className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
+                                {canAddSecond && (
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-5 w-5 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-100 rounded-full"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            openAddModal({ batch_id: batchId, time: currentSlot });
+                                        }}
+                                        title="Add Alternate Lab"
+                                    >
+                                        <Plus className="h-4 w-4" />
+                                    </Button>
+                                )}
+                                <Edit2 className="h-3 w-3 text-muted-foreground" />
+                            </span>
+                        </div>
+                    ) : (
+                        <div
+                            className="h-full w-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer hover:bg-muted/50 rounded-md"
+                            onClick={() => openAddModal({ batch_id: batchId, time: currentSlot })}
+                            title="Add Class"
+                        >
+                            <Plus className="h-5 w-5 text-muted-foreground/50 hover:text-indigo-500" />
+                        </div>
+                    )}
+                </td>
+            );
+
+            i += colSpan;
+        }
+        return cells;
+    };
+
+    // Helper to get cell data for Section/Faculty views (Row = Day)
+    const getWeeklyCellData = (day, timeSlot) => {
+        let specificDayRoutine = routine.filter(r => r.day === day);
+        const labSlot = slotMapping[timeSlot];
+
+        let classInfos = [];
+
+        if (viewMode === 'section') {
+            if (!selectedBatchId) return [];
+            classInfos = specificDayRoutine.filter(r =>
+                r.batch_id === parseInt(selectedBatchId) &&
+                (r.time === timeSlot || (labSlot && r.time === labSlot) || r.time.replace(' ', '') === timeSlot.replace(' ', ''))
+            );
+        } else if (viewMode === 'faculty') {
+            if (!selectedFacultyId) return [];
+            classInfos = specificDayRoutine.filter(r =>
+                r.faculty_id === parseInt(selectedFacultyId) &&
+                (r.time === timeSlot || (labSlot && r.time === labSlot) || r.time.replace(' ', '') === timeSlot.replace(' ', ''))
+            );
+        }
+
+        if (!classInfos || classInfos.length === 0) return [];
+
+        return classInfos.map(classInfo => {
+            const isLab = isLabCourse(classInfo.course_id);
+            const credit = getCourseCredit(classInfo.course_id);
+
+            return {
+                id: classInfo.id,
+                course: getCourseCode(classInfo.course_id),
+                faculty: getFacultyInitials(classInfo.faculty_id),
+                room: getRoomName(classInfo.room_id),
+                courseId: classInfo.course_id,
+                facultyId: classInfo.faculty_id,
+                roomId: classInfo.room_id,
+                isLab: isLab,
+                credit: credit,
+                originalTime: classInfo.time,
+                batchId: classInfo.batch_id
+            };
+        });
+    };
+
+
+    const renderWeeklyRows = (day) => {
+        const cells = [];
+        let i = 0;
+        // If weekly view, we iterate the FULL header slots (currentTheorySlots which is 8 cols)
+        // But we check if the slot is "open" for this specific day using overtimeVisibility[day]
+        const slots = currentTheorySlots;
+
+        while (i < slots.length) {
+            const currentSlot = slots[i];
+
+            // Check if this slot is active for the day
+            const isOvertimeSlot = i >= 6; // Indices 6 and 7 are overtime
+            // For Section/Faculty views, we always show overtime slots (User Request)
+            const isDayActive = true;
+
+            if (!isDayActive) {
+                // Render placeholder/disabled cell
+                cells.push(
+                    <td key={currentSlot} className="px-2 py-2 border-r border-border text-center align-middle h-24 bg-muted/20">
+                        <div className="h-full w-full flex items-center justify-center opacity-30 text-xs text-muted-foreground select-none">
+                            -
+                        </div>
+                    </td>
+                );
+                i++;
+                continue;
+            }
+
+            const currentData = getWeeklyCellData(day, currentSlot);
+
+            let colSpan = 1;
+            if (currentData && currentData.length > 0) {
+                const firstEntry = currentData[0];
+                if (firstEntry.isLab && labSlots.includes(firstEntry.originalTime)) {
+                    colSpan = 2;
+                }
+            }
+
+            if (i + colSpan > slots.length) {
+                colSpan = slots.length - i;
+            }
+
+            // Prepare display data directly
+            const displayCourses = currentData.map(d => d.course).join(' / ');
+            const displayFaculty = currentData.map(d => d.faculty).join(' / ');
+            const displayRoom = currentData.map(d => d.room).join(' / ');
+            const isLab = currentData.some(d => d.isLab);
+            const isAlt = currentData.some(d => d.credit === 0.75 || d.credit === "0.75");
+            const canAddSecond = currentData.length === 1 && isAlt;
+
+            cells.push(
+                <td key={currentSlot} colSpan={colSpan} className="px-2 py-2 border-r border-border text-center align-middle h-24 relative group">
+                    {currentData.length > 0 ? (
+                        <div
+                            className={cn(
+                                "flex flex-col items-center justify-center space-y-1 cursor-pointer hover:bg-muted/50 p-2 rounded-md transition-colors h-full w-full relative group"
+                            )}
+                            onClick={() => openEditModal(currentData)}
+                        >
+                            <span className="font-bold text-foreground text-sm">{displayCourses}</span>
+                            <span className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
+                                {viewMode === 'faculty' ? (
+                                    metadata.batches.find(b => b.id === currentData[0].batchId)?.name + " " + (metadata.batches.find(b => b.id === currentData[0].batchId)?.section || '')
+                                ) : (
+                                    displayFaculty
+                                )}
+                            </span>
+                            <span className="text-xs font-mono text-indigo-500 font-medium">
+                                R-{displayRoom}
+                            </span>
+                            <div className="flex gap-1 justify-center mt-1">
+                                {isLab && (
+                                    <span className="text-[10px] text-emerald-600 font-bold uppercase tracking-wider">LAB</span>
+                                )}
+                                {isAlt && (
+                                    <span className="text-[10px] text-orange-600 font-bold uppercase tracking-wider">ALT</span>
+                                )}
+                            </div>
+
+                            {/* Hover Hint & Add Second Button */}
+                            <span className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
+                                {canAddSecond && (
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-5 w-5 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-100 rounded-full"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            // For Section view, batchId is fixed. For Faculty view, we might need to select batch? 
+                                            // In Faculty view, adding a class is ambiguous without batch. 
+                                            // Let's assume for now add is disabled or prompts for batch in modal.
+                                            // But openAddModal accepts overrides.
+                                            const overrides = { time: currentSlot, day: day };
+                                            if (viewMode === 'section') overrides.batch_id = selectedBatchId;
+                                            if (viewMode === 'faculty') overrides.faculty_id = selectedFacultyId;
+                                            openAddModal(overrides);
+                                        }}
+                                        title="Add Alternate Lab"
+                                    >
+                                        <Plus className="h-4 w-4" />
+                                    </Button>
+                                )}
+                                <Edit2 className="h-3 w-3 text-muted-foreground" />
+                            </span>
+                        </div>
+                    ) : (
+                        <div
+                            className="h-full w-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer hover:bg-muted/50 rounded-md"
+                            onClick={() => {
+                                const overrides = { time: currentSlot, day: day };
+                                if (viewMode === 'section') overrides.batch_id = selectedBatchId;
+                                if (viewMode === 'faculty') overrides.faculty_id = selectedFacultyId;
+                                openAddModal(overrides);
+                            }}
+                            title="Add Class"
+                        >
+                            <Plus className="h-5 w-5 text-muted-foreground/50 hover:text-indigo-500" />
+                        </div>
+                    )}
+                </td>
+            );
+
+            i += colSpan;
+        }
+        return cells;
+    };
+
+
+    // Modified to use renderRawCell for consistency
+    // const getCellData = (batchId, timeSlot) => renderRawCell(batchId, timeSlot, selectedDay);
+
+    const downloadPDF = () => {
+        const doc = new jsPDF('l', 'mm', 'a3');
+        doc.setFontSize(18);
+
+        let title = `Class Routine`;
+        if (viewMode === 'master') title += ` - ${selectedDay}`;
+        if (viewMode === 'section') {
+            const b = metadata.batches.find(b => String(b.id) === String(selectedBatchId));
+            title += ` - ${b ? b.name + ' (' + b.section + ')' : ''}`;
+        }
+        if (viewMode === 'faculty') {
+            const f = metadata.faculty.find(f => String(f.id) === String(selectedFacultyId));
+            title += ` - ${f ? f.name : ''}`;
+        }
+
+        doc.text(title, 14, 15);
+        doc.setFontSize(10);
+        doc.text(`Generated: ${new Date().toLocaleDateString()}`, 14, 22);
+
+        const tableColumn = [viewMode === 'master' ? "Batch" : "Day", ...theorySlots];
+        const tableRows = [];
+
+        if (viewMode === 'master') {
+            // Rows are Batches
+            let visibleBatches = metadata.batches;
+
+            visibleBatches.forEach(batch => {
+                const row = [batch.name + (batch.section ? ` (${batch.section})` : '')];
+                let i = 0;
+                while (i < theorySlots.length) {
+                    const slot = theorySlots[i];
+                    const data = getCellData(batch.id, slot);
+                    if (data && data.length > 0) {
+                        const d = data[0]; // Simplified for PDF
+                        row.push(`${d.course}\n${d.faculty}\n${d.room}`);
+                        if (d.isLab && labSlots.includes(d.originalTime)) {
+                            i++;
+                            row.push('');
+                        }
+                    } else {
+                        row.push('');
+                    }
+                    i++;
+                }
+                tableRows.push(row);
+            });
+        } else {
+            // Rows are Days
+            days.forEach(day => {
+                const row = [day];
+                let i = 0;
+                while (i < theorySlots.length) {
+                    const slot = theorySlots[i];
+                    const data = getWeeklyCellData(day, slot);
+                    if (data && data.length > 0) {
+                        const d = data[0];
+                        row.push(`${d.course}\n${viewMode === 'faculty' ? metadata.batches.find(b => b.id === d.batchId)?.name + " " + (metadata.batches.find(b => b.id === d.batchId)?.section || '') : d.faculty}\n${d.room}`); // Show Batch for Faculty view
+                        if (d.isLab && labSlots.includes(d.originalTime)) {
+                            i++;
+                            row.push('');
+                        }
+                    } else {
+                        row.push('');
+                    }
+                    i++;
+                }
+                tableRows.push(row);
+            });
+        }
+
+        doc.autoTable({
+            head: [tableColumn],
+            body: tableRows,
+            startY: 25,
+            theme: 'grid',
+            styles: { fontSize: 8, cellPadding: 2, halign: 'center', valign: 'middle' },
+            headStyles: { fillColor: [79, 70, 229], textColor: 255, fontSize: 10 },
+            columnStyles: { 0: { halign: 'left', fontStyle: 'bold', cellWidth: 30 } }
+        });
+
+        doc.save(`routine.pdf`);
+        toast.success('PDF downloaded!');
+    };
+
+    // Determine active time slots based on selected course
+    const activeTimeSlots = isLabCourse(formData.course_id) ? labSlots : theorySlots;
+
+    return (
+        <div className="space-y-6 max-w-[100vw] overflow-x-hidden px-4 relative">
+            {/* Header Section */}
+            <div className="flex flex-col gap-4">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div>
+                        <h2 className="text-3xl font-bold tracking-tight text-foreground">Class Schedule</h2>
+                        <p className="text-muted-foreground mt-1">
+                            {viewMode === 'master' && 'Master Routine View'}
+                            {viewMode === 'section' && 'Section Weekly View'}
+                            {viewMode === 'faculty' && 'Faculty Weekly View'}
+                        </p>
+                    </div>
+                    <div className="flex space-x-3">
+                        <Button onClick={() => openAddModal()} className="shadow-lg shadow-emerald-500/20 bg-emerald-600 hover:bg-emerald-700">
+                            <Plus className="mr-2 h-4 w-4" />
+                            Add Class
+                        </Button>
+                        <Button variant="outline" onClick={downloadPDF}>
+                            <Download className="mr-2 h-4 w-4" />
+                            Download PDF
+                        </Button>
+                    </div>
+                </div>
+
+                {/* View Controls */}
+                <div className="flex flex-wrap items-center gap-4 bg-muted/30 p-4 rounded-lg border border-border">
+                    {/* View Mode Switcher */}
+                    <div className="flex bg-background rounded-md border border-border p-1">
+                        {['master', 'section', 'faculty'].map(mode => (
+                            <button
+                                key={mode}
+                                onClick={() => setViewMode(mode)}
+                                className={cn(
+                                    "px-4 py-2 text-sm font-medium rounded-sm transition-all capitalize",
+                                    viewMode === mode ? "bg-indigo-600 text-white shadow-sm" : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                                )}
+                            >
+                                {mode} View
+                            </button>
+                        ))}
+                    </div>
+
+                    <div className="h-8 w-px bg-border hidden md:block"></div>
+
+                    {/* Conditional Selectors */}
+                    {(viewMode === 'master') && (
+                        <>
+                            <div className="flex items-center gap-2">
+                                <Calendar className="w-4 h-4 text-muted-foreground" />
+                                <Select
+                                    value={selectedDay}
+                                    onChange={(e) => setSelectedDay(e.target.value)}
+                                    className="w-40"
+                                >
+                                    {days.map(day => <option key={day} value={day}>{day}</option>)}
+                                </Select>
+                            </div>
+
+                            <div className="flex items-center gap-2 px-2 border-l border-border ml-2">
+                                <span className="text-xs text-muted-foreground font-medium whitespace-nowrap hidden sm:inline">Evening:</span>
+                                <button
+                                    onClick={() => setOvertimeVisibility(prev => ({
+                                        ...prev,
+                                        [selectedDay]: !prev[selectedDay]
+                                    }))}
+                                    className={cn(
+                                        "relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none focus:ring-1 focus:ring-indigo-500",
+                                        overtimeVisibility[selectedDay] ? "bg-indigo-600" : "bg-muted-foreground/30"
+                                    )}
+                                    title={`Toggle evening slots for ${selectedDay}`}
+                                >
+                                    <span
+                                        className={cn(
+                                            "inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform",
+                                            overtimeVisibility[selectedDay] ? "translate-x-4" : "translate-x-0.5"
+                                        )}
+                                    />
+                                </button>
+                            </div>
+                        </>
+                    )}
+
+                    {viewMode === 'section' && (
+                        <div className="flex items-center gap-2">
+                            <span className="text-sm font-medium">Section:</span>
+                            <Select
+                                value={selectedBatchId}
+                                onChange={(e) => setSelectedBatchId(e.target.value)}
+                                className="w-60"
+                            >
+                                <option value="">Select Section</option>
+                                {metadata.batches.map(b => (
+                                    <option key={b.id} value={b.id}>{b.name} - {b.section}</option>
+                                ))}
+                            </Select>
+                        </div>
+                    )}
+
+
+
+                    {viewMode === 'faculty' && (
+                        <div className="flex items-center gap-2">
+                            <span className="text-sm font-medium">Faculty:</span>
+                            <Select
+                                value={selectedFacultyId}
+                                onChange={(e) => setSelectedFacultyId(e.target.value)}
+                                className="w-60"
+                            >
+                                <option value="">Select Faculty</option>
+                                {metadata.faculty.map(f => (
+                                    <option key={f.id} value={f.id}>{f.name} ({f.initials})</option>
+                                ))}
+                            </Select>
+                        </div>
+                    )}
+                </div>
+            </div>
+
+            {/* Class Modal (add/edit) */}
+            {showModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+                    <div className="bg-card w-full max-w-lg rounded-xl shadow-2xl border border-border animate-in fade-in zoom-in-95 duration-200">
+                        <div className="flex items-center justify-between p-4 border-b border-border">
+                            <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
+                                {editingId ? (
+                                    <>
+                                        <Edit2 className="h-4 w-4 text-indigo-500" />
+                                        Edit Class Details
+                                    </>
+                                ) : (
+                                    <>
+                                        <Plus className="h-4 w-4 text-emerald-500" />
+                                        Add Manual Class
+                                    </>
+                                )}
+                            </h3>
+                            <button onClick={() => setShowModal(false)} className="text-muted-foreground hover:text-foreground">
+                                <X className="h-5 w-5" />
+                            </button>
+                        </div>
+                        <div className="p-6 space-y-4">
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium">Day</label>
+                                    <Select
+                                        value={formData.day}
+                                        onChange={(e) => setFormData({ ...formData, day: e.target.value })}
+                                        className="w-full"
+                                    >
+                                        {days.map(d => <option key={d} value={d}>{d}</option>)}
+                                    </Select>
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium">
+                                        Time Slot
+                                        {isLabCourse(formData.course_id) && <span className="text-xs text-emerald-600 ml-2">(Lab Duration)</span>}
+                                    </label>
+                                    <Select
+                                        value={formData.time}
+                                        onChange={(e) => setFormData({ ...formData, time: e.target.value })}
+                                        className="w-full"
+                                    >
+                                        <option value="">Select Time</option>
+                                        {activeTimeSlots.map(t => <option key={t} value={t}>{t}</option>)}
+                                    </Select>
+                                </div>
+                            </div>
+
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium">Batch</label>
+                                <Select
+                                    value={formData.batch_id}
+                                    onChange={(e) => setFormData({ ...formData, batch_id: e.target.value })}
+                                    className="w-full"
+                                >
+                                    <option value="">Select Batch</option>
+                                    {metadata.batches.map(b => (
+                                        <option key={b.id} value={b.id}>{b.name} (Sec-{b.section})</option>
+                                    ))}
+                                </Select>
+                            </div>
+
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium">Course</label>
+                                <Select
+                                    value={formData.course_id}
+                                    onChange={(e) => {
+                                        const newCourseId = e.target.value;
+                                        let newTime = formData.time;
+
+                                        // Intelligent Time Slot Mapping
+                                        if (newCourseId && formData.time) {
+                                            const isLab = isLabCourse(newCourseId);
+                                            // Case 1: Switching to Lab Course
+                                            if (isLab) {
+                                                // Try to find a lab slot that starts at the same time
+                                                // e.g. 08:00-09:15 -> 08:00-10:30
+                                                const theoryStart = formData.time.split('-')[0].trim();
+                                                const matchingLabSlot = labSlots.find(ls => ls.startsWith(theoryStart));
+
+                                                if (matchingLabSlot) {
+                                                    newTime = matchingLabSlot;
+                                                } else if (!labSlots.includes(formData.time)) {
+                                                    // If current time isn't a valid lab slot and no match found, reset
+                                                    newTime = '';
+                                                }
+                                            }
+                                            // Case 2: Switching to Theory Course
+                                            else {
+                                                // If currently selected time is a Lab slot (longer), try to revert to standard slot
+                                                if (labSlots.includes(formData.time)) {
+                                                    const labStart = formData.time.split('-')[0].trim();
+                                                    const matchingTheorySlot = theorySlots.find(ts => ts.startsWith(labStart));
+                                                    if (matchingTheorySlot) {
+                                                        newTime = matchingTheorySlot;
+                                                    } else {
+                                                        newTime = '';
+                                                    }
+                                                }
+                                                // If it was already a theory slot, keep it.
+                                            }
+                                        }
+
+                                        setFormData({ ...formData, course_id: newCourseId, time: newTime });
+                                    }}
+                                    className="w-full"
+                                >
+                                    <option value="">Select Course</option>
+                                    {metadata.courses.map(c => (
+                                        <option key={c.id} value={c.id}>
+                                            {c.code} - {c.name} {c.type === 'Lab' ? '(Lab)' : ''}
+                                        </option>
+                                    ))}
+                                </Select>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium">Faculty</label>
+                                    <Select
+                                        value={formData.faculty_id}
+                                        onChange={(e) => setFormData({ ...formData, faculty_id: e.target.value })}
+                                        className="w-full"
+                                    >
+                                        <option value="">Select Faculty</option>
+                                        {metadata.faculty.map(f => (
+                                            <option key={f.id} value={f.id}>{f.name} ({f.initials})</option>
+                                        ))}
+                                    </Select>
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium">Room</label>
+                                    <Select
+                                        value={formData.room_id}
+                                        onChange={(e) => setFormData({ ...formData, room_id: e.target.value })}
+                                        className="w-full"
+                                    >
+                                        <option value="">Select Room</option>
+                                        {/* Intelligent Room Filtering */}
+                                        {metadata.rooms.filter(r => {
+                                            if (!formData.course_id) return true;
+
+                                            // Find course object
+                                            const courseId = String(formData.course_id).split('-')[0];
+                                            const course = metadata.courses.find(c => String(c.id) === courseId);
+
+                                            if (!course) return true;
+
+                                            // Exception for HUM-1142
+                                            if (course.code === 'HUM-1142' || course.code === 'Hum-1142') return true;
+
+                                            // Filter by Type
+                                            const isLab = isLabCourse(formData.course_id);
+                                            return isLab ? r.type === 'Lab' : r.type === 'Theory';
+                                        }).map(r => (
+                                            <option key={r.id} value={r.id}>Room {r.room_number}</option>
+                                        ))}
+                                    </Select>
+                                </div>
+                            </div>
+
+                            <div className="pt-2 flex gap-3">
+                                {editingId && (
+                                    <Button
+                                        variant="destructive"
+                                        onClick={handleDelete}
+                                        className="flex-1"
+                                    >
+                                        <Trash2 className="mr-2 h-4 w-4" />
+                                        Delete
+                                    </Button>
+                                )}
+                                <Button
+                                    onClick={handleSave}
+                                    className={cn(
+                                        "flex-[2]",
+                                        editingId ? "bg-indigo-600 hover:bg-indigo-700" : "bg-emerald-600 hover:bg-emerald-700"
+                                    )}
+                                >
+                                    {editingId ? (
+                                        <>
+                                            <Check className="mr-2 h-4 w-4" />
+                                            Save Changes
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Plus className="mr-2 h-4 w-4" />
+                                            Add Class to Routine
+                                        </>
+                                    )}
+                                </Button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Day Selector Tabs and Overtime Toggle */}
+            {/* This section is now integrated into the main view controls */}
+            {/* <div className="flex flex-col sm:flex-row items-end sm:items-center justify-between gap-2 border-b border-border pb-1">
+                <div className="flex overflow-x-auto space-x-1 w-full sm:w-auto">
+                    {days.map(day => (
+                        <button
+                            key={day}
+                            onClick={() => setSelectedDay(day)}
+                            className={cn(
+                                "px-6 py-2.5 text-sm font-medium rounded-t-lg transition-colors whitespace-nowrap flex-1 sm:flex-none",
+                                selectedDay === day
+                                    ? "bg-card text-indigo-600 border-t-2 border-indigo-600 shadow-sm dark:bg-muted dark:text-indigo-400"
+                                    : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                            )}
+                        >
+                            {day}
+                        </button>
+                    ))}
+                </div>
+
+                <div className="flex items-center gap-2 px-2 pb-1 sm:pb-0">
+                    <span className="text-xs text-muted-foreground font-medium whitespace-nowrap">Overtime (Evening):</span>
+                    <button
+                        onClick={() => setOvertimeVisibility(prev => ({
+                            ...prev,
+                            [selectedDay]: !prev[selectedDay]
+                        }))}
+                        className={cn(
+                            "relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2",
+                            overtimeVisibility[selectedDay] ? "bg-indigo-600" : "bg-muted"
+                        )}
+                        title={`Toggle evening slots for ${selectedDay}`}
+                    >
+                        <span
+                            className={cn(
+                                "inline-block h-4 w-4 transform rounded-full bg-white transition-transform",
+                                overtimeVisibility[selectedDay] ? "translate-x-6" : "translate-x-1"
+                            )}
+                        />
+                    </button>
+                </div>
+            </div>
+
+            {/* Master Schedule Table */}
+            <div className="bg-card rounded-lg border border-border shadow-sm overflow-hidden">
+                <div className="overflow-x-auto">
+                    <table className="w-full text-sm text-left">
+                        <thead className="text-xs uppercase bg-muted/50 text-muted-foreground">
+                            <tr>
+                                <th className="px-4 py-4 w-48 font-bold border-r border-border text-center sticky left-0 bg-secondary z-10 transition-colors">
+                                    {(viewMode === 'master') ? 'Batch' : 'Day'}
+                                </th>
+                                {currentTheorySlots.map(slot => (
+                                    <th key={slot} className="px-4 py-3 border-r border-border text-center min-w-[120px]">
+                                        {slot}
+                                    </th>
+                                ))}
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-border">
+                            {/* Logic for Master View: Rows = Batches */}
+                            {(viewMode === 'master') && (
+                                <>
+                                    {metadata.batches
+                                        .map(batch => (
+                                            <tr key={batch.id} className="hover:bg-muted/30 transition-colors">
+                                                <td className="px-4 py-3 font-semibold text-foreground border-r border-border sticky left-0 bg-card z-10 whitespace-nowrap min-w-[200px]">
+                                                    <div className="text-xs text-muted-foreground">{batch.name}</div>
+                                                    <div className="font-bold text-indigo-600 dark:text-indigo-400">Section {batch.section}</div>
+                                                    <div
+                                                        className="mt-1 flex items-center gap-1 text-[10px] text-muted-foreground bg-muted/50 px-2 py-1 rounded w-fit cursor-pointer hover:bg-indigo-100 hover:text-indigo-700 transition-colors"
+                                                        onClick={() => {
+                                                            setEditingBatchId(batch.id);
+                                                            setSelectedBatchRoom(batch.default_room_id || '');
+                                                        }}
+                                                        title="Edit Default Room"
+                                                    >
+                                                        <MapPin className="w-3 h-3" />
+                                                        {editingBatchId === batch.id ? (
+                                                            <div className="flex items-center gap-2" onClick={e => e.stopPropagation()}>
+                                                                <select
+                                                                    className="h-6 text-[10px] bg-background border rounded"
+                                                                    value={selectedBatchRoom}
+                                                                    onChange={(e) => setSelectedBatchRoom(e.target.value)}
+                                                                >
+                                                                    <option value="">Select</option>
+                                                                    {metadata.rooms.map(r => (
+                                                                        <option key={r.id} value={r.id}>{r.room_number}</option>
+                                                                    ))}
+                                                                </select>
+                                                                <Check
+                                                                    className="w-4 h-4 text-emerald-600 cursor-pointer hover:scale-110"
+                                                                    onClick={() => handleBatchRoomUpdate(batch.id)}
+                                                                />
+                                                                <X
+                                                                    className="w-4 h-4 text-red-500 cursor-pointer hover:scale-110"
+                                                                    onClick={() => setEditingBatchId(null)}
+                                                                />
+                                                            </div>
+                                                        ) : (
+                                                            <span>Room: {getRoomName(batch.default_room_id)}</span>
+                                                        )}
+                                                    </div>
+                                                </td>
+                                                {renderRowCells(batch.id)}
+                                            </tr>
+                                        ))}
+                                    {metadata.batches.length === 0 && (
+                                        <tr>
+                                            <td colSpan={currentTheorySlots.length + 1} className="px-4 py-8 text-center text-muted-foreground">
+                                                No batches found.
+                                            </td>
+                                        </tr>
+                                    )}
+                                </>
+                            )}
+
+                            {/* Logic for Section/Faculty View: Rows = Days */}
+                            {(viewMode === 'section' || viewMode === 'faculty') && (
+                                <>
+                                    {days.map(day => (
+                                        <tr key={day} className="hover:bg-muted/30 transition-colors">
+                                            <td className="px-4 py-4 font-semibold text-foreground border-r border-border sticky left-0 bg-card z-10 text-center min-w-[150px]">
+                                                {day}
+                                            </td>
+                                            {renderWeeklyRows(day)}
+                                        </tr>
+                                    ))}
+                                    {((viewMode === 'section' && !selectedBatchId) || (viewMode === 'faculty' && !selectedFacultyId)) && (
+                                        <tr>
+                                            <td colSpan={currentTheorySlots.length + 1} className="px-4 py-8 text-center text-muted-foreground">
+                                                Please select a {viewMode} to view schedule
+                                            </td>
+                                        </tr>
+                                    )}
+                                </>
+                            )}
+                        </tbody>
+                    </table>
+                </div>
+                {/* Selection Modal for Multi-Class Slots */}
+                {selectionModalData && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+                        <div className="bg-card w-full max-w-sm rounded-lg shadow-lg border border-border p-6 space-y-4">
+                            <div className="flex justify-between items-center mb-2">
+                                <h3 className="text-lg font-semibold">Select Class to Edit</h3>
+                                <Button variant="ghost" size="icon" onClick={() => setSelectionModalData(null)}>
+                                    <X className="h-4 w-4" />
+                                </Button>
+                            </div>
+                            <div className="space-y-2">
+                                {selectionModalData.classes.map((cls) => (
+                                    <div
+                                        key={cls.id}
+                                        className="flex items-center justify-between p-3 rounded-md border border-border bg-muted/20 hover:bg-muted/40 transition-colors cursor-pointer"
+                                        onClick={() => {
+                                            setSelectionModalData(null);
+                                            openEditModal(cls);
+                                        }}
+                                    >
+                                        <div>
+                                            <div className="font-bold text-sm">{cls.course}</div>
+                                            <div className="text-xs text-muted-foreground">{cls.faculty} | R-{cls.room}</div>
+                                        </div>
+                                        <div className="p-1.5 rounded-full bg-primary/10 text-primary">
+                                            <Edit2 className="h-3.5 w-3.5" />
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+};
+
+export default RoutineView;

@@ -1,0 +1,71 @@
+# Project Role: Senior Full-Stack Architect & AI Engineer
+
+**Objective:** Build a comprehensive "Smart Routine Creation & Management System" for a University Department.
+**Development Strategy:** 1.  **Phase 1 (Current):** Use a **Local JSON File** as the database for rapid prototyping and offline development.
+2.  **Phase 2 (Future):** The architecture must be modular so that the database layer can be easily migrated to **Supabase (PostgreSQL)** later without rewriting business logic.
+
+**Tech Stack Requirements:**
+1.  **Frontend:** React.js (Vite) + Tailwind CSS.
+2.  **Backend:** Node.js (Express).
+3.  **Data Storage:** Local `db.json` file (acting as a Mock Database). Use a library like `lowdb` or standard `fs` module.
+4.  **AI Microservice:** Python (FastAPI/Flask) utilizing `OR-Tools` or `Genetic Algorithms`.
+5.  **Architecture:** Strict **Repository Pattern** or **Service Layer Pattern** to decouple the API logic from the Data Access Layer.
+
+---
+
+### 1. Database Schema (JSON Structure)
+Design the `db.json` file to mimic a relational structure (arrays of objects with IDs) to ensure easy migration to Supabase tables later.
+* **Structure:**
+    ```json
+    {
+      "users": [ { "id": 1, "email": "...", "role": "faculty", "faculty_id_ref": 101 } ],
+      "faculty": [ { "id": 101, "name": "...", "type": "Guest", "availability": [...] } ],
+      "courses": [ { "id": 201, "code": "CSE-101", "assigned_faculty_id": 101 } ],
+      "rooms": [ { "id": 301, "room_number": "AB-102", "capacity": 50 } ],
+      "batches": [ { "id": 401, "name": "Batch-29", "section": "A" } ],
+      "routine_schedule": [] 
+    }
+    ```
+
+### 2. Backend Architecture (Node.js with Repository Pattern)
+* **Controller Layer:** Handles Requests/Responses (e.g., `req.body`).
+* **Service Layer:** Business logic (e.g., validation).
+* **Repository Layer (Crucial):**
+    * Create a file `dbRepository.js`.
+    * Currently, functions like `getAllFaculty()` or `saveRoutine()` will read/write to `db.json`.
+    * **Instruction:** Write code such that later I only need to change this specific file to switch from JSON to Supabase SQL queries.
+
+### 3. AI Automation Logic (Python Microservice)
+The Python service should be stateless regarding the database.
+* **Input:** The Node.js backend reads the full state from `db.json` and sends it as a payload to the Python endpoint `/optimize`.
+* **Processing:** Python uses `OR-Tools` to generate the schedule based on constraints (Faculty Availability, Room Capacity, No Overlaps).
+* **Output:** Python returns the generated schedule JSON to Node.js, which then saves it to `db.json`.
+
+### 4. Frontend Features (React.js)
+* **Dashboard:** View Master Routine (Filterable by Batch/Teacher).
+* **Admin Panel:** Forms to Add Faculty/Courses/Rooms (updates local JSON via API).
+* **Role-Based View:**
+    * *Student:* Enter ID -> Fetch specific batch routine.
+    * *Teacher:* Enter ID -> Fetch specific teacher routine.
+
+* **Advanced Filtering System:**
+    * Filter by: Batch, Teacher, Room, AND **Floor Number**.
+
+* **Smart Export Manager (Crucial Feature):**
+    * Create a reusable component `ExportButton`.
+    * **Functionality:**
+        1.  **Download Full Routine:** Generates a PDF of the complete master schedule.
+        2.  **Download Individual:** If a user filters by "Teacher: Mr. X", the PDF button downloads *only* Mr. X's routine.
+        3.  **Download Floor-wise:** If filtered by "Floor: 4", download routine for all rooms on the 4th floor.
+        4.  **Print Mode:** Add CSS `@media print` styles to ensure the routine looks clean when printing directly from the browser (hiding sidebars/buttons).
+* **PDF Styling:** The PDF must have a header with the University Name, Department Name, and Effective Date.
+
+
+### 5. Implementation Instructions
+1.  **Project Structure:** Create a clean monorepo (client/server/ai).
+2.  **Mock Data:** Generate a sample `db.json` file with dummy data for testing.
+3.  **Backend Code:** Write the Node.js Express server with the **Repository Pattern** clearly implemented for JSON handling.
+4.  **AI Code:** Write the Python script using `ortools` that accepts the JSON payload.
+5.  **Migration Guide:** Add a comment section explaining exactly which files to modify when moving from `fs/json` to `supabase-js` client.
+
+Please generate the file structure, `package.json`, the `db.json` sample structure, the Node.js Repository Logic, and the Python Algorithm code.

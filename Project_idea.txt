@@ -1,0 +1,80 @@
+# Project Title: Smart Academic Routine Solution
+
+### 1. Executive Summary
+
+This is an **AI-powered web application** designed to fully automate the complex task of creating university class schedules. Beyond just generating routines, the system offers advanced features to view, filter, and **download/print specific schedules** for individual batches, teachers, rooms, or floors, solving critical administrative challenges.
+
+### 2. The Problem Statement
+
+* **Manual Complexity:** Creating a conflict-free routine for all batches, sections, and teachers manually is time-consuming and prone to errors.
+* **Information Overload:** Students struggle to find their specific classes within a massive departmental routine posted on notice boards.
+* **Floor Management:** Administrators need to post specific schedules on different floors (e.g., "4th Floor Schedule" on the 4th floor), but manually separating this data is difficult.
+* **Printing Issues:** Printing routines from Excel often results in broken formatting and unreadable text.
+
+### 3. Our Solution & Key Features
+
+The system addresses three main areas: **Automation, Customization, and Distribution**.
+
+#### A. Smart Routine Generation (AI Core)
+
+* **Automated Scheduling:** The system utilizes Python's **Constraint Satisfaction Problem (CSP)** algorithms to generate conflict-free routines.
+* **Intelligent Logic:** It considers teacher availability (especially for Guest Faculty), room capacity, and course requirements (Lab vs. Theory) to create the optimal schedule.
+
+#### B. Dynamic Filtering (Advanced Filtering) - *New Feature*
+
+Users can view and isolate the routine based on their specific needs:
+
+* **Floor-wise View:** Instantly filter to see all classes scheduled on a specific floor (e.g., "Show all classes on Level 4").
+* **Teacher-wise View:** View the weekly schedule for a specific faculty member.
+* **Room-wise View:** Check when a specific lab or classroom is occupied or free.
+* **Batch/Section-wise View:** Students can see the routine for their specific semester and section.
+
+#### C. Smart PDF & Print System (Smart Export) - *New Feature*
+
+This is a flagship feature ensuring that "what you see is what you get" (WYSIWYG) in print.
+
+* **Context-Aware Download:**
+* If an admin filters by "Faculty: Mr. X", the "Download PDF" button generates a PDF containing **only** Mr. X's schedule.
+* If filtered by "Floor: 4", the system generates a PDF listing classes for all rooms on the 4th floor, ready for the notice board.
+
+
+* **Professional Formatting:** Generated PDFs automatically include the University header, Department logo, effective dates, and a clean, readable table layout.
+* **Print Mode:** A dedicated print view removes website navigation (sidebars, buttons) for a clean direct-from-browser printing experience.
+
+---
+
+### 4. Technical Architecture
+
+The project is designed to be robust and scalable, starting with a local-first approach.
+
+* **Frontend (User Interface):** Built with **React.js** and **Tailwind CSS** for a modern, responsive design.
+* **PDF Engine:** Utilizes `jspdf` and `jspdf-autotable` libraries to render high-quality PDFs directly in the browser.
+
+
+* **Backend (API & Logic):** **Node.js (Express)** handles data requests and serves as the bridge between the frontend and the AI engine.
+* **AI Engine (The Brain):** **Python** running **Google OR-Tools** to perform the heavy calculation for scheduling.
+* **Database (Storage Strategy):**
+* **Phase 1 (Development):** **Local JSON File** architecture for rapid, offline prototyping.
+* **Phase 2 (Production):** Migration to **Supabase (PostgreSQL)** for a cloud-hosted, scalable database solution.
+
+
+
+---
+
+### 5. User Benefits
+
+| User Role | Key Benefits |
+| --- | --- |
+| **Admin** | One-click routine generation. Ability to print specific floor schedules for physical notice boards easily. |
+| **Faculty** | Personalized dashboards and downloadable PDFs of their own teaching schedules. Guest teachers can input flexible availability. |
+| **Student** | Zero confusion. They see and download only the routine relevant to their specific batch and section. |
+
+### 6. Process Flow (How it Works)
+
+1. **Input:** Admin enters data for Teachers, Courses, Rooms (including Floor Numbers), and Batches.
+2. **Process:** Admin clicks "Generate Routine." The AI engine calculates the optimal schedule.
+3. **View:** Users access the dashboard.
+4. **Filter:** A user selects a filter (e.g., "Floor 4" or "Teacher: Ms. Y").
+5. **Output:** The user clicks "Download PDF/Print." The system generates a formatted document containing only the filtered data.
+
+This project will transform the department's routine management from a tedious manual task into a seamless, automated, and highly accessible digital experience.
