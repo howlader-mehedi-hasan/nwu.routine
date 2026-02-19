@@ -2,3 +2,6 @@ Routine generation logic update
 For a 3 credit theory courses, the class must 2.5 hours in a week that means 2 classes in a week but for 1.5 credit lab it must happen one lab within 2.5 hours in any day of a week. And for 0.75 credit lab course this lab happens one time in two week that means alter week(odd/even) lab of 2.5 hours
 Actually, a theory class is no longer from 1 hour and 15 minutes in a day, if this theory is three credit then two class per week, but if it is 1.5 credit then on class per week.
 And any lab courses time is 2.5 hours exactly in day. 0.75 credit lab happens one time in two weeks. And 1.5 credit lab is happening one time in a week.
+
+And there is a class conduction schedule have to maintainable, which is one Laboratory room can conduct three lab class in a day(8 AM to 10:30 AM, 10:45 AM to 1:15 PM, 2 PM to 4:30 PM)
+But if there needs any extra slot, then it have to conduct at 4:30 PM to 7 PM s extra slot(rear cases only)

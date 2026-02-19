@@ -1,0 +1,1330 @@
+{
+  "users": [
+    {
+      "id": 1,
+      "email": "admin@example.com",
+      "role": "admin",
+      "password": "admin"
+    }
+  ],
+  "faculty": [
+    {
+      "id": 101,
+      "name": "Md. Mahedi Hasan",
+      "initials": "MAH",
+      "type": "Permanent",
+      "email": "mah@nwu.edu.bd"
+    },
+    {
+      "id": 102,
+      "name": "Tajul Islam",
+      "initials": "TI",
+      "type": "Permanent",
+      "email": "ti@nwu.edu.bd"
+    },
+    {
+      "id": 103,
+      "name": "Nurjahan Akter Jolly",
+      "initials": "NAJ",
+      "type": "Permanent",
+      "email": "naj@nwu.edu.bd"
+    },
+    {
+      "id": 104,
+      "name": "Istyaque Ahammed",
+      "initials": "IA",
+      "type": "Permanent",
+      "email": "ia@nwu.edu.bd"
+    },
+    {
+      "id": 105,
+      "name": "Swapnil Pranta Mistry",
+      "initials": "SPM",
+      "type": "Permanent",
+      "email": "spm@nwu.edu.bd"
+    },
+    {
+      "id": 106,
+      "name": "Md. Mahmudul Hasan",
+      "initials": "MMH",
+      "type": "Permanent",
+      "email": "mmh@nwu.edu.bd"
+    },
+    {
+      "id": 107,
+      "name": "Dr. Md. Inzamam-Ul-Hossain",
+      "initials": "IUH",
+      "type": "Permanent",
+      "email": "iuh@nwu.edu.bd"
+    },
+    {
+      "id": 108,
+      "name": "M. Raihan",
+      "initials": "MRI",
+      "type": "Permanent",
+      "email": "mri@nwu.edu.bd"
+    },
+    {
+      "id": 109,
+      "name": "Abu Naim Khan",
+      "initials": "ANK",
+      "type": "Permanent",
+      "email": "ank@nwu.edu.bd"
+    },
+    {
+      "id": 110,
+      "name": "Jannatul Ferdous",
+      "initials": "JF",
+      "type": "Permanent",
+      "email": "jf@nwu.edu.bd"
+    },
+    {
+      "id": 111,
+      "name": "Sumaiya Jannati",
+      "initials": "SJ",
+      "type": "Permanent",
+      "email": "sj@nwu.edu.bd"
+    },
+    {
+      "id": 112,
+      "name": "Sahida Islam Mou",
+      "initials": "SIM",
+      "type": "Permanent",
+      "email": "sim@nwu.edu.bd"
+    },
+    {
+      "id": 113,
+      "name": "Nagib Mahfuz",
+      "initials": "NM",
+      "type": "Permanent",
+      "email": "nm@nwu.edu.bd"
+    },
+    {
+      "id": 114,
+      "name": "Sharmina Al-Azad",
+      "initials": "SAA",
+      "type": "Permanent",
+      "email": "saa@nwu.edu.bd"
+    },
+    {
+      "id": 115,
+      "name": "Nusrat Jahan Urme",
+      "initials": "NJU",
+      "type": "Permanent",
+      "email": "nju@nwu.edu.bd"
+    },
+    {
+      "id": 116,
+      "name": "Mahamudul Hassan Milon",
+      "initials": "MHM",
+      "type": "Permanent",
+      "email": "mhm@nwu.edu.bd"
+    },
+    {
+      "id": 117,
+      "name": "Md. Asaduzzaman",
+      "initials": "AZ",
+      "type": "Permanent",
+      "email": "az@nwu.edu.bd"
+    },
+    {
+      "id": 118,
+      "name": "Tahsin Ahmed Chowdhury",
+      "initials": "TAC",
+      "type": "Permanent",
+      "email": "tac@nwu.edu.bd"
+    },
+    {
+      "id": 119,
+      "name": "Prof. Dr. Anupam Kumar Bairagi",
+      "initials": "AKB",
+      "type": "Guest",
+      "email": "akb@ku.ac.bd"
+    },
+    {
+      "id": 120,
+      "name": "Prof. Dr. G M Atiqur Rahaman",
+      "initials": "GMAR",
+      "type": "Guest",
+      "email": "gmar@ku.ac.bd"
+    },
+    {
+      "id": 121,
+      "name": "Prof. Prokash Chondra Adhikary",
+      "initials": "PCA",
+      "type": "Guest",
+      "email": "pca@nwu.edu.bd"
+    },
+    {
+      "id": 122,
+      "name": "Nazirul Hasan Shawon",
+      "initials": "NHS",
+      "type": "Guest",
+      "email": "nhs@kuet.ac.bd"
+    },
+    {
+      "id": 123,
+      "name": "Farzana Akther",
+      "initials": "FA",
+      "type": "Guest",
+      "email": "fa@nwu.edu.bd"
+    },
+    {
+      "id": 124,
+      "name": "Md. Anisur Rahman",
+      "initials": "AR",
+      "type": "Guest",
+      "email": "ar@nwu.edu.bd"
+    },
+    {
+      "id": 125,
+      "name": "Md. Mehedi Hasan",
+      "initials": "MH(B)",
+      "type": "Guest",
+      "email": "mhb@nwu.edu.bd"
+    },
+    {
+      "id": 126,
+      "name": "Md. Shohel Rana",
+      "initials": "MSR",
+      "type": "Guest",
+      "email": "msr@nwu.edu.bd"
+    },
+    {
+      "id": 127,
+      "name": "Jobayra Afsana",
+      "initials": "JA",
+      "type": "Guest",
+      "email": "ja@nwu.edu.bd"
+    },
+    {
+      "id": 128,
+      "name": "Zahrul Jannat Peya",
+      "initials": "ZJ",
+      "type": "Guest",
+      "email": "zj@kau.edu.bd"
+    },
+    {
+      "id": 129,
+      "name": "Chandan Biswas",
+      "initials": "CB",
+      "type": "Guest",
+      "email": "cb@ruet.ac.bd"
+    },
+    {
+      "id": 130,
+      "name": "Kazi Saeed Alam",
+      "initials": "KSA",
+      "type": "Guest",
+      "email": "ksa@kuet.ac.bd"
+    },
+    {
+      "id": 131,
+      "name": "Sheikh Md. Masum Zameel",
+      "initials": "SMM",
+      "type": "Guest",
+      "email": "smm@nwu.edu.bd"
+    },
+    {
+      "id": 132,
+      "name": "Md. Shamim Reza",
+      "initials": "SR",
+      "type": "Guest",
+      "email": "sr@nwu.edu.bd"
+    },
+    {
+      "id": 133,
+      "name": "Shakil Ahmed",
+      "initials": "SA",
+      "type": "Guest",
+      "email": "sa@nwu.edu.bd"
+    },
+    {
+      "id": 134,
+      "name": "Hafsa Siddique",
+      "initials": "HS",
+      "type": "Guest",
+      "email": "hs@nwu.edu.bd"
+    },
+    {
+      "id": 135,
+      "name": "Rukaiya Basri",
+      "initials": "RB",
+      "type": "Guest",
+      "email": "rb@nwu.edu.bd"
+    },
+    {
+      "id": 136,
+      "name": "Arnab Talukder",
+      "initials": "AT",
+      "type": "Guest",
+      "email": "at@nwu.edu.bd"
+    },
+    {
+      "id": 137,
+      "name": "S.M Fahim Islam",
+      "initials": "FI",
+      "type": "Guest",
+      "email": "fi@nwu.edu.bd"
+    },
+    {
+      "id": 138,
+      "name": "Titu Nath",
+      "initials": "TN",
+      "type": "Guest",
+      "email": "tn@kuet.ac.bd"
+    },
+    {
+      "id": 139,
+      "name": "Sagar Kundu",
+      "initials": "SK",
+      "type": "Guest",
+      "email": "sk@nwu.edu.bd"
+    },
+    {
+      "id": 140,
+      "name": "Abdullah Ahmed",
+      "initials": "AA",
+      "type": "Guest",
+      "email": "aa@nwu.edu.bd"
+    },
+    {
+      "id": 141,
+      "name": "Md. Fahad Mollik",
+      "initials": "FM",
+      "type": "Guest",
+      "email": "fm@nwu.edu.bd"
+    },
+    {
+      "id": 142,
+      "name": "Md. Sohid Jaman Sumon",
+      "initials": "SJS",
+      "type": "Guest",
+      "email": "sjs@nwu.edu.bd"
+    },
+    {
+      "id": 143,
+      "name": "Zahid Ur Rasid",
+      "initials": "ZR",
+      "type": "Guest",
+      "email": "zr@nwu.edu.bd"
+    },
+    {
+      "id": 144,
+      "name": "Md. Raihan Khan",
+      "initials": "MRK",
+      "type": "Guest",
+      "email": "mrk@nwu.edu.bd"
+    },
+    {
+      "id": 145,
+      "name": "Apurbo Saikat Roy",
+      "initials": "ASR",
+      "type": "Guest",
+      "email": "asr@nwu.edu.bd"
+    },
+    {
+      "id": 146,
+      "name": "Tanbir Hossain",
+      "initials": "TH",
+      "type": "Guest",
+      "email": "th@nwu.edu.bd"
+    },
+    {
+      "id": 147,
+      "name": "Md. Rezanul Islam",
+      "initials": "MRZI",
+      "type": "Guest",
+      "email": "mrzi@nwu.edu.bd"
+    },
+    {
+      "id": 148,
+      "name": "Ferdouse Yesmin Pinky",
+      "initials": "FYP",
+      "type": "Guest",
+      "email": "fyp@nwu.edu.bd"
+    },
+    {
+      "id": 149,
+      "name": "Sourav Kumar Kha",
+      "initials": "SKK",
+      "type": "Guest",
+      "email": "skk@nwu.edu.bd"
+    },
+    {
+      "id": 150,
+      "name": "Abdullah Al Mamun",
+      "initials": "AAM",
+      "type": "Guest",
+      "email": "aam@nwu.edu.bd"
+    },
+    {
+      "id": 151,
+      "name": "Md. Masum Howlader",
+      "initials": "MH",
+      "type": "Guest",
+      "email": "mh@nwu.edu.bd"
+    },
+    {
+      "id": 152,
+      "name": "Tasnia Zaman Shashwaty",
+      "initials": "TZS",
+      "type": "Guest",
+      "email": "tzs@nwu.edu.bd"
+    },
+    {
+      "name": "Howlader Mehedi Hasan",
+      "type": "Adjunct",
+      "email": "hmh.cse@gmail.com",
+      "id": 153,
+      "initials": "HMH",
+      "designation": "Adjunct Faculty",
+      "phone": "+8801648291385"
+    }
+  ],
+  "courses": [
+    {
+      "id": 201,
+      "code": "Chem-1135",
+      "name": "Chemistry",
+      "credit": 3,
+      "type": "Theory"
+    },
+    {
+      "id": 202,
+      "code": "Chem-1136",
+      "name": "Chemistry Laboratory",
+      "credit": 0.75,
+      "type": "Lab"
+    },
+    {
+      "id": 203,
+      "code": "CSE-1101",
+      "name": "Computer Basics and Programming",
+      "credit": 3,
+      "type": "Theory"
+    },
+    {
+      "id": 204,
+      "code": "CSE-1102",
+      "name": "Computer Basics and Programming Laboratory",
+      "credit": 1.5,
+      "type": "Lab"
+    },
+    {
+      "id": 205,
+      "code": "Hum-1141",
+      "name": "English and Human Communication",
+      "credit": 3,
+      "type": "Theory"
+    },
+    {
+      "id": 206,
+      "code": "Hum-1142",
+      "name": "English and Human Communication Laboratory",
+      "credit": 0.75,
+      "type": "Lab"
+    },
+    {
+      "id": 207,
+      "code": "Hum-1143",
+      "name": "History of the Emergence of Bangladesh",
+      "credit": 3,
+      "type": "Theory"
+    },
+    {
+      "id": 208,
+      "code": "Math-1131",
+      "name": "Engineering Mathematics-I",
+      "credit": 3,
+      "type": "Theory"
+    },
+    {
+      "id": 209,
+      "code": "Phy-1133",
+      "name": "Physics-I",
+      "credit": 3,
+      "type": "Theory"
+    },
+    {
+      "id": 210,
+      "code": "Phy-1134",
+      "name": "Physics-I Laboratory",
+      "credit": 0.75,
+      "type": "Lab"
+    },
+    {
+      "id": 211,
+      "code": "CSE-1201",
+      "name": "Structured Programming",
+      "credit": 3,
+      "type": "Theory"
+    },
+    {
+      "id": 212,
+      "code": "CSE-1202",
+      "name": "Structured Programming Laboratory",
+      "credit": 1.5,
+      "type": "Lab"
+    },
+    {
+      "id": 213,
+      "code": "CSE-1203",
+      "name": "Digital Logic Design",
+      "credit": 3,
+      "type": "Theory"
+    },
+    {
+      "id": 214,
+      "code": "CSE-1204",
+      "name": "Digital Logic Design Laboratory",
+      "credit": 1.5,
+      "type": "Lab"
+    },
+    {
+      "id": 215,
+      "code": "EEE-1221",
+      "name": "Basic Electrical Circuit",
+      "credit": 3,
+      "type": "Theory"
+    },
+    {
+      "id": 216,
+      "code": "EEE-1222",
+      "name": "Basic Electrical Circuit Laboratory",
+      "credit": 0.75,
+      "type": "Lab"
+    },
+    {
+      "id": 217,
+      "code": "Math-1231",
+      "name": "Engineering Mathematics-II",
+      "credit": 3,
+      "type": "Theory"
+    },
+    {
+      "id": 218,
+      "code": "ME-1223",
+      "name": "Mechanics and Heat Engineering",
+      "credit": 3,
+      "type": "Theory"
+    },
+    {
+      "id": 219,
+      "code": "ME-1224",
+      "name": "Computer Aided Design Laboratory",
+      "credit": 0.75,
+      "type": "Lab"
+    },
+    {
+      "id": 220,
+      "code": "Phy-1233",
+      "name": "Physics-II",
+      "credit": 3,
+      "type": "Theory"
+    },
+    {
+      "id": 221,
+      "code": "CSE-2101",
+      "name": "Object Oriented Programming",
+      "credit": 3,
+      "type": "Theory"
+    },
+    {
+      "id": 222,
+      "code": "CSE-2102",
+      "name": "Object Oriented Programming Laboratory",
+      "credit": 1.5,
+      "type": "Lab"
+    },
+    {
+      "id": 223,
+      "code": "CSE-2103",
+      "name": "Data Structures",
+      "credit": 3,
+      "type": "Theory"
+    },
+    {
+      "id": 224,
+      "code": "CSE-2104",
+      "name": "Data Structures Laboratory",
+      "credit": 0.75,
+      "type": "Lab"
+    },
+    {
+      "id": 225,
+      "code": "CSE-2105",
+      "name": "Computer Architecture",
+      "credit": 3,
+      "type": "Theory"
+    },
+    {
+      "id": 226,
+      "code": "CSE-2107",
+      "name": "Discrete Mathematics",
+      "credit": 3,
+      "type": "Theory"
+    },
+    {
+      "id": 227,
+      "code": "EEE-2121",
+      "name": "Electronic Devices and Circuits",
+      "credit": 3,
+      "type": "Theory"
+    },
+    {
+      "id": 228,
+      "code": "EEE-2122",
+      "name": "Electronic Devices and Circuits Laboratory",
+      "credit": 0.75,
+      "type": "Lab"
+    },
+    {
+      "id": 229,
+      "code": "Math-2131",
+      "name": "Engineering Mathematics-III",
+      "credit": 3,
+      "type": "Theory"
+    },
+    {
+      "id": 230,
+      "code": "CSE-2200",
+      "name": "Software Development Laboratory",
+      "credit": 1.5,
+      "type": "Lab"
+    },
+    {
+      "id": 231,
+      "code": "CSE-2201",
+      "name": "Database Systems",
+      "credit": 3,
+      "type": "Theory"
+    },
+    {
+      "id": 232,
+      "code": "CSE-2202",
+      "name": "Database Systems Laboratory",
+      "credit": 1.5,
+      "type": "Lab"
+    },
+    {
+      "id": 233,
+      "code": "CSE-2203",
+      "name": "Algorithm Analysis and Design",
+      "credit": 3,
+      "type": "Theory"
+    },
+    {
+      "id": 234,
+      "code": "CSE-2204",
+      "name": "Algorithm Analysis and Design Laboratory",
+      "credit": 0.75,
+      "type": "Lab"
+    },
+    {
+      "id": 235,
+      "code": "CSE-2205",
+      "name": "Numerical Analysis",
+      "credit": 3,
+      "type": "Theory"
+    },
+    {
+      "id": 236,
+      "code": "CSE-2206",
+      "name": "Numerical Analysis Laboratory",
+      "credit": 0.75,
+      "type": "Lab"
+    },
+    {
+      "id": 237,
+      "code": "EEE-2221",
+      "name": "Electrical Drives and Instrumentation",
+      "credit": 3,
+      "type": "Theory"
+    },
+    {
+      "id": 238,
+      "code": "EEE-2222",
+      "name": "Electrical Drives and Instrumentation Laboratory",
+      "credit": 0.75,
+      "type": "Lab"
+    },
+    {
+      "id": 239,
+      "code": "Hum-2241",
+      "name": "Psychology",
+      "credit": 3,
+      "type": "Theory"
+    },
+    {
+      "id": 240,
+      "code": "Math-2231",
+      "name": "Engineering Mathematics-IV",
+      "credit": 3,
+      "type": "Theory"
+    },
+    {
+      "id": 241,
+      "code": "CSE-3101",
+      "name": "Microprocessors and Microcontrollers",
+      "credit": 3,
+      "type": "Theory"
+    },
+    {
+      "id": 242,
+      "code": "CSE-3102",
+      "name": "Microprocessors and Microcontrollers Laboratory",
+      "credit": 0.75,
+      "type": "Lab"
+    },
+    {
+      "id": 243,
+      "code": "CSE-3103",
+      "name": "Software Engineering",
+      "credit": 3,
+      "type": "Theory"
+    },
+    {
+      "id": 244,
+      "code": "CSE-3104",
+      "name": "Software Engineering Laboratory",
+      "credit": 0.75,
+      "type": "Lab"
+    },
+    {
+      "id": 245,
+      "code": "CSE-3105",
+      "name": "Theory of Computation",
+      "credit": 3,
+      "type": "Theory"
+    },
+    {
+      "id": 246,
+      "code": "CSE-3108",
+      "name": "Internet Programming Laboratory",
+      "credit": 1.5,
+      "type": "Lab"
+    },
+    {
+      "id": 247,
+      "code": "CSE-3109",
+      "name": "Digital System Design",
+      "credit": 3,
+      "type": "Theory"
+    },
+    {
+      "id": 248,
+      "code": "CSE-3110",
+      "name": "Digital System Design Laboratory",
+      "credit": 0.75,
+      "type": "Lab"
+    },
+    {
+      "id": 249,
+      "code": "CSE-3121",
+      "name": "Data Communication",
+      "credit": 3,
+      "type": "Theory"
+    },
+    {
+      "id": 250,
+      "code": "Hum-3141",
+      "name": "Engineering Economics and Accounting",
+      "credit": 3,
+      "type": "Theory"
+    },
+    {
+      "id": 251,
+      "code": "CSE-3200",
+      "name": "Advanced Programming Laboratory",
+      "credit": 1.5,
+      "type": "Lab"
+    },
+    {
+      "id": 252,
+      "code": "CSE-3201",
+      "name": "System Programming and Operating System",
+      "credit": 3,
+      "type": "Theory"
+    },
+    {
+      "id": 253,
+      "code": "CSE-3202",
+      "name": "System Programming and Operating System Laboratory",
+      "credit": 1.5,
+      "type": "Lab"
+    },
+    {
+      "id": 254,
+      "code": "CSE-3203",
+      "name": "Computer Networks",
+      "credit": 3,
+      "type": "Theory"
+    },
+    {
+      "id": 255,
+      "code": "CSE-3204",
+      "name": "Computer Networks Laboratory",
+      "credit": 0.75,
+      "type": "Lab"
+    },
+    {
+      "id": 256,
+      "code": "CSE-3208",
+      "name": "Technical Writing and Presentation Laboratory",
+      "credit": 0.75,
+      "type": "Lab"
+    },
+    {
+      "id": 257,
+      "code": "CSE-3211",
+      "name": "Data Warehousing and Mining",
+      "credit": 3,
+      "type": "Theory"
+    },
+    {
+      "id": 258,
+      "code": "CSE-3212",
+      "name": "Data Warehousing and Mining Laboratory",
+      "credit": 0.75,
+      "type": "Lab"
+    },
+    {
+      "id": 259,
+      "code": "Hum-3241",
+      "name": "Industrial Management",
+      "credit": 3,
+      "type": "Theory"
+    },
+    {
+      "id": 260,
+      "code": "Hum-3243",
+      "name": "Bengali Language and Literature",
+      "credit": 3,
+      "type": "Theory"
+    },
+    {
+      "id": 261,
+      "code": "CSE-4100",
+      "name": "Project / Thesis-I",
+      "credit": 1.5,
+      "type": "Project/Thesis"
+    },
+    {
+      "id": 262,
+      "code": "CSE-4102",
+      "name": "Artificial Intelligence Laboratory",
+      "credit": 0.75,
+      "type": "Lab"
+    },
+    {
+      "id": 263,
+      "code": "CSE-4101",
+      "name": "Artificial Intelligence",
+      "credit": 3,
+      "type": "Theory"
+    },
+    {
+      "id": 264,
+      "code": "CSE-4103",
+      "name": "Compiler Design",
+      "credit": 3,
+      "type": "Theory"
+    },
+    {
+      "id": 265,
+      "code": "CSE-4104",
+      "name": "Compiler Design Laboratory",
+      "credit": 0.75,
+      "type": "Lab"
+    },
+    {
+      "id": 266,
+      "code": "CSE-4105",
+      "name": "Information Security and Control",
+      "credit": 3,
+      "type": "Theory"
+    },
+    {
+      "id": 267,
+      "code": "CSE-4117",
+      "name": "Computer Vision and Image Processing",
+      "credit": 3,
+      "type": "Theory"
+    },
+    {
+      "id": 268,
+      "code": "CSE-4118",
+      "name": "Computer Vision and Image Processing Laboratory",
+      "credit": 0.75,
+      "type": "Lab"
+    },
+    {
+      "id": 269,
+      "code": "CSE-4119",
+      "name": "Machine Learning",
+      "credit": 3,
+      "type": "Theory"
+    },
+    {
+      "id": 270,
+      "code": "CSE-4120",
+      "name": "Machine Learning Laboratory",
+      "credit": 0.75,
+      "type": "Lab"
+    },
+    {
+      "id": 271,
+      "code": "CSE-4200",
+      "name": "Project / Thesis-II",
+      "credit": 3,
+      "type": "Project/Thesis"
+    },
+    {
+      "id": 272,
+      "code": "CSE-4205",
+      "name": "Applied Probability and Queuing Theory",
+      "credit": 3,
+      "type": "Theory"
+    },
+    {
+      "id": 273,
+      "code": "CSE-4201",
+      "name": "Computer Graphics",
+      "credit": 3,
+      "type": "Theory"
+    },
+    {
+      "id": 274,
+      "code": "CSE-4202",
+      "name": "Computer Graphics Laboratory",
+      "credit": 0.75,
+      "type": "Lab"
+    },
+    {
+      "id": 275,
+      "code": "CSE-4206",
+      "name": "Industrial Training",
+      "credit": 0,
+      "type": "Training"
+    },
+    {
+      "id": 276,
+      "code": "CSE-4216",
+      "name": "Natural Language Processing",
+      "credit": 3,
+      "type": "Theory"
+    },
+    {
+      "id": 277,
+      "code": "Hum-4241",
+      "name": "Government and Sociology",
+      "credit": 3,
+      "type": "Theory"
+    }
+  ],
+  "rooms": [
+    {
+      "id": 301,
+      "room_number": "301",
+      "capacity": 40,
+      "floor": 3,
+      "type": "Theory"
+    },
+    {
+      "id": 302,
+      "room_number": "305",
+      "capacity": 40,
+      "floor": 3,
+      "type": "Theory"
+    },
+    {
+      "id": 303,
+      "room_number": "501",
+      "capacity": 40,
+      "floor": 5,
+      "type": "Theory"
+    },
+    {
+      "id": 304,
+      "room_number": "502",
+      "capacity": 40,
+      "floor": 5,
+      "type": "Theory"
+    },
+    {
+      "id": 305,
+      "room_number": "503",
+      "capacity": 40,
+      "floor": 5,
+      "type": "Theory"
+    },
+    {
+      "id": 306,
+      "room_number": "604",
+      "capacity": 40,
+      "floor": 6,
+      "type": "Theory"
+    },
+    {
+      "id": 307,
+      "room_number": "703",
+      "capacity": 40,
+      "floor": 7,
+      "type": "Theory"
+    },
+    {
+      "id": 309,
+      "room_number": "504",
+      "capacity": 40,
+      "floor": 5,
+      "type": "Theory"
+    },
+    {
+      "id": 310,
+      "room_number": "702",
+      "capacity": 40,
+      "floor": 7,
+      "type": "Theory"
+    },
+    {
+      "id": 311,
+      "room_number": "701",
+      "capacity": 40,
+      "floor": 7,
+      "type": "Theory"
+    },
+    {
+      "id": 312,
+      "room_number": "903",
+      "capacity": 40,
+      "floor": 9,
+      "type": "Theory"
+    },
+    {
+      "id": 313,
+      "room_number": "801",
+      "capacity": 40,
+      "floor": 8,
+      "type": "Theory"
+    },
+    {
+      "id": 314,
+      "room_number": "704",
+      "capacity": 40,
+      "floor": 7,
+      "type": "Theory"
+    },
+    {
+      "id": 315,
+      "room_number": "901",
+      "capacity": 40,
+      "floor": 9,
+      "type": "Theory"
+    },
+    {
+      "id": 316,
+      "room_number": "601",
+      "capacity": 40,
+      "floor": 6,
+      "type": "Theory"
+    },
+    {
+      "id": 317,
+      "room_number": "302",
+      "capacity": 40,
+      "floor": 3,
+      "type": "Lab"
+    },
+    {
+      "id": 318,
+      "room_number": "303",
+      "capacity": 40,
+      "floor": 3,
+      "type": "Lab"
+    },
+    {
+      "id": 319,
+      "room_number": "304",
+      "capacity": 40,
+      "floor": 3,
+      "type": "Lab"
+    },
+    {
+      "id": 320,
+      "room_number": "605",
+      "capacity": 40,
+      "floor": 6,
+      "type": "Theory"
+    },
+    {
+      "id": 321,
+      "room_number": "705",
+      "capacity": 40,
+      "floor": 7,
+      "type": "Lab"
+    },
+    {
+      "id": 322,
+      "room_number": "901",
+      "capacity": 40,
+      "floor": 9,
+      "type": "Theory"
+    },
+    {
+      "id": 323,
+      "room_number": "801",
+      "capacity": 40,
+      "floor": 8,
+      "type": "Theory"
+    },
+    {
+      "room_number": "903",
+      "capacity": 40,
+      "floor": 9,
+      "type": "Theory",
+      "id": 324
+    }
+  ],
+  "batches": [
+    {
+      "id": 401,
+      "name": "1st Year 1st Sem",
+      "section": "A",
+      "default_room_id": 301
+    },
+    {
+      "id": 402,
+      "name": "1st Year 1st Sem",
+      "section": "B",
+      "default_room_id": 301
+    },
+    {
+      "id": 403,
+      "name": "1st Year 2nd Sem",
+      "section": "A",
+      "default_room_id": 301
+    },
+    {
+      "id": 404,
+      "name": "1st Year 2nd Sem",
+      "section": "B",
+      "default_room_id": 301
+    },
+    {
+      "id": 405,
+      "name": "1st Year 2nd Sem",
+      "section": "C",
+      "default_room_id": 301
+    },
+    {
+      "id": 406,
+      "name": "2nd Year 1st Sem",
+      "section": "A",
+      "default_room_id": 301
+    },
+    {
+      "id": 407,
+      "name": "2nd Year 1st Sem",
+      "section": "B",
+      "default_room_id": 301
+    },
+    {
+      "id": 408,
+      "name": "2nd Year 1st Sem",
+      "section": "C",
+      "default_room_id": 301
+    },
+    {
+      "id": 409,
+      "name": "2nd Year 2nd Sem",
+      "section": "A",
+      "default_room_id": 301
+    },
+    {
+      "id": 410,
+      "name": "2nd Year 2nd Sem",
+      "section": "B",
+      "default_room_id": 301
+    },
+    {
+      "id": 411,
+      "name": "2nd Year 2nd Sem",
+      "section": "C",
+      "default_room_id": 301
+    },
+    {
+      "id": 412,
+      "name": "3rd Year 1st Sem",
+      "section": "A",
+      "default_room_id": 301
+    },
+    {
+      "id": 413,
+      "name": "3rd Year 1st Sem",
+      "section": "B",
+      "default_room_id": 301
+    },
+    {
+      "id": 414,
+      "name": "3rd Year 2nd Sem",
+      "section": "A",
+      "default_room_id": 301
+    },
+    {
+      "id": 415,
+      "name": "3rd Year 2nd Sem",
+      "section": "B",
+      "default_room_id": 301
+    },
+    {
+      "id": 416,
+      "name": "3rd Year 2nd Sem",
+      "section": "C",
+      "default_room_id": 301
+    },
+    {
+      "id": 417,
+      "name": "4th Year 1st Sem",
+      "section": "A",
+      "default_room_id": 301
+    },
+    {
+      "id": 418,
+      "name": "4th Year 1st Sem",
+      "section": "B",
+      "default_room_id": 301
+    },
+    {
+      "id": 419,
+      "name": "4th Year 1st Sem",
+      "section": "C",
+      "default_room_id": 301
+    },
+    {
+      "id": 420,
+      "name": "4th Year 2nd Sem",
+      "section": "A",
+      "default_room_id": 301
+    }
+  ],
+  "routine_schedule": [
+    {
+      "id": "1770896746294",
+      "day": "Monday",
+      "time": "09:15-10:30",
+      "batch_id": 401,
+      "course_id": 203,
+      "faculty_id": 101,
+      "room_id": 301
+    },
+    {
+      "id": "1770910448674",
+      "day": "Monday",
+      "time": "10:45-01:15",
+      "batch_id": 401,
+      "course_id": 204,
+      "faculty_id": 101,
+      "room_id": 317
+    },
+    {
+      "id": "1770910624946",
+      "day": "Monday",
+      "time": "08:00-09:15",
+      "batch_id": 401,
+      "course_id": 201,
+      "faculty_id": 149,
+      "room_id": 301
+    },
+    {
+      "id": "1770918564520",
+      "day": "Monday",
+      "time": "10:45-01:15",
+      "batch_id": 403,
+      "course_id": 204,
+      "faculty_id": 102,
+      "room_id": 301
+    },
+    {
+      "id": "1770920051366",
+      "day": "Monday",
+      "time": "08:00-09:15",
+      "batch_id": 402,
+      "course_id": 203,
+      "faculty_id": 101,
+      "room_id": 318
+    },
+    {
+      "id": "1770931729855",
+      "day": "Monday",
+      "time": "10:45-12:00",
+      "batch_id": 404,
+      "course_id": 211,
+      "faculty_id": 108,
+      "room_id": 305
+    },
+    {
+      "id": "1771008633014",
+      "day": "Monday",
+      "time": "02:00-03:15",
+      "batch_id": 401,
+      "course_id": 209,
+      "faculty_id": 129,
+      "room_id": 301
+    },
+    {
+      "id": "1771009942983",
+      "day": "Monday",
+      "time": "08:00-10:30",
+      "batch_id": 404,
+      "course_id": 202,
+      "faculty_id": 112,
+      "room_id": 317
+    },
+    {
+      "id": "1771009997847",
+      "day": "Monday",
+      "time": "08:00-09:15",
+      "batch_id": 404,
+      "course_id": 210,
+      "faculty_id": 110,
+      "room_id": 317
+    },
+    {
+      "id": "1771010403648",
+      "day": "Monday",
+      "time": "08:00-10:30",
+      "batch_id": 406,
+      "course_id": 216,
+      "faculty_id": 103,
+      "room_id": 318
+    },
+    {
+      "id": "1771010470899",
+      "day": "Monday",
+      "time": "08:00-10:30",
+      "batch_id": 406,
+      "course_id": 210,
+      "faculty_id": 136,
+      "room_id": 321
+    },
+    {
+      "id": "1771010611006",
+      "day": "Tuesday",
+      "time": "02:00-04:30",
+      "batch_id": 403,
+      "course_id": 206,
+      "faculty_id": 101,
+      "room_id": 301
+    },
+    {
+      "id": "1771010869217",
+      "day": "Tuesday",
+      "time": "08:00-10:30",
+      "batch_id": 403,
+      "course_id": 206,
+      "faculty_id": 107,
+      "room_id": 301
+    }
+  ]
+}
