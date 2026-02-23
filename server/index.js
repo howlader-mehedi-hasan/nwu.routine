@@ -16,6 +16,7 @@ app.use('/api/courses', require('./routes/courseRoutes'));
 app.use('/api/rooms', require('./routes/roomRoutes'));
 app.use('/api/batches', require('./routes/batchRoutes'));
 app.use('/api/routine', require('./routes/routineRoutes'));
+app.use('/api/settings', require('./routes/settingsRoutes'));
 
 // Basic Route
 app.get('/', (req, res) => {

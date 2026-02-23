@@ -31,4 +31,7 @@ export const updateRoutineEntry = (id, data) => api.put(`/routine/${id}`, data);
 export const deleteRoutineEntry = (id) => api.delete(`/routine/${id}`);
 export const clearRoutine = () => api.delete('/routine/clear');
 
+export const getSettings = () => api.get('/settings');
+export const updateSettings = (data) => api.put('/settings', data);
+
 export default api;

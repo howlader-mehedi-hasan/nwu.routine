@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getRoutine, addRoutineEntry, updateRoutineEntry, deleteRoutineEntry, clearRoutine, getRooms, getFaculty, getBatches, getCourses, updateBatch } from '../services/api';
+import { getRoutine, addRoutineEntry, updateRoutineEntry, deleteRoutineEntry, clearRoutine, getRooms, getFaculty, getBatches, getCourses, updateBatch, getSettings } from '../services/api';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import { Download, Plus, Filter, Calendar, Settings, X, Check, Trash2, Edit2, MapPin } from 'lucide-react';
@@ -8,6 +8,7 @@ import { Select } from './ui/Select';
 import { Card, CardContent } from './ui/Card';
 import toast from 'react-hot-toast';
 import { cn } from '../lib/utils';
+import SettingsModal from './SettingsModal';
 
 const RoutineView = ({ overtimeVisibility, setOvertimeVisibility }) => {
     const [routine, setRoutine] = useState([]);
@@ -40,18 +41,26 @@ const RoutineView = ({ overtimeVisibility, setOvertimeVisibility }) => {
     // Multi-Class Selection Modal State
     const [selectionModalData, setSelectionModalData] = useState(null); // { classes: [], batchId: '' }
 
+    // Settings State
+    const [showSettingsModal, setShowSettingsModal] = useState(false);
+    const [scheduleSettings, setScheduleSettings] = useState({
+        general: { theory_slots: [], lab_slots: [], slot_mapping: {} },
+        daily_overrides: {}
+    });
+
     useEffect(() => {
         fetchData();
     }, []);
 
     const fetchData = async () => {
         try {
-            const [routineRes, roomsRes, facultyRes, batchesRes, coursesRes] = await Promise.all([
+            const [routineRes, roomsRes, facultyRes, batchesRes, coursesRes, settingsRes] = await Promise.all([
                 getRoutine(),
                 getRooms(),
                 getFaculty(),
                 getBatches(),
-                getCourses()
+                getCourses(),
+                getSettings()
             ]);
             setRoutine(routineRes.data);
             setMetadata({
@@ -60,6 +69,14 @@ const RoutineView = ({ overtimeVisibility, setOvertimeVisibility }) => {
                 batches: batchesRes.data,
                 courses: coursesRes.data
             });
+            if (settingsRes.data.success) {
+                const settingsData = settingsRes.data.data;
+                setScheduleSettings(settingsData);
+                // Update form default if theory slots available in general config
+                if (settingsData.general?.theory_slots?.length > 0) {
+                    setFormData(prev => ({ ...prev, time: settingsData.general.theory_slots[0] }));
+                }
+            }
             setLoading(false);
         } catch (err) {
             console.error(err);
@@ -72,7 +89,7 @@ const RoutineView = ({ overtimeVisibility, setOvertimeVisibility }) => {
     const resetForm = () => {
         setFormData({
             day: selectedDay, // Default to currently viewed day
-            time: '08:00-09:15',
+            time: scheduleSettings.general?.theory_slots?.[0] || '08:00-09:15',
             batch_id: '', // Reset
             course_id: '',
             faculty_id: '',
@@ -226,34 +243,24 @@ const RoutineView = ({ overtimeVisibility, setOvertimeVisibility }) => {
         return false;
     };
 
-    // Time Slots configuration
-    const fullTheorySlots = [
-        "08:00-09:15", "09:15-10:30", "10:45-12:00", "12:00-01:15", "02:00-03:15", "03:15-04:30", "04:30-05:45", "05:45-07:00"
-    ];
-
-    // Maintain theorySlots for compatibility
-    const theorySlots = fullTheorySlots;
-
-    const labSlots = [
-        "08:00-10:30",
-        "10:45-01:15",
-        "02:00-04:30",
-        "04:30-07:00"
-    ];
-
-    const slotMapping = {
-        "08:00-09:15": "08:00-10:30",
-        "10:45-12:00": "10:45-01:15",
-        "02:00-03:15": "02:00-04:30",
-        "04:30-05:45": "04:30-07:00"
+    // Helper to get configuration for a specific day
+    const getConfigForDay = (day) => {
+        if (!scheduleSettings.daily_overrides) return scheduleSettings.general || { theory_slots: [], lab_slots: [], slot_mapping: {} };
+        return scheduleSettings.daily_overrides[day] || scheduleSettings.general;
     };
+
+    // Current configuration based on selected day
+    const currentDayConfig = getConfigForDay(selectedDay);
+    const theorySlots = currentDayConfig.theory_slots;
+    const labSlots = currentDayConfig.lab_slots;
+    const slotMapping = currentDayConfig.slot_mapping;
 
     const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
     // Dynamic slots based on view
     const currentTheorySlots = (viewMode === 'section' || viewMode === 'faculty')
-        ? fullTheorySlots
-        : (overtimeVisibility[selectedDay] ? fullTheorySlots : fullTheorySlots.slice(0, 6));
+        ? theorySlots
+        : (overtimeVisibility[selectedDay] ? theorySlots : theorySlots.slice(0, 6));
 
     const renderRawCell = (batchId, timeSlot, currentDay) => {
         // Find class for specific day
@@ -664,6 +671,10 @@ const RoutineView = ({ overtimeVisibility, setOvertimeVisibility }) => {
                         <Button onClick={() => openAddModal()} className="shadow-lg shadow-emerald-500/20 bg-emerald-600 hover:bg-emerald-700">
                             <Plus className="mr-2 h-4 w-4" />
                             Add Class
+                        </Button>
+                        <Button variant="outline" onClick={() => setShowSettingsModal(true)}>
+                            <Settings className="mr-2 h-4 w-4" />
+                            Settings
                         </Button>
                         <Button variant="outline" onClick={downloadPDF}>
                             <Download className="mr-2 h-4 w-4" />
@@ -1139,6 +1150,13 @@ const RoutineView = ({ overtimeVisibility, setOvertimeVisibility }) => {
                     </div>
                 )}
             </div>
+
+            {/* Settings Modal */}
+            <SettingsModal
+                isOpen={showSettingsModal}
+                onClose={() => setShowSettingsModal(false)}
+                onSettingsUpdated={(newSettings) => setScheduleSettings(newSettings)}
+            />
         </div>
     );
 };

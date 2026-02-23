@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { getRoutine, getRooms, getFaculty, getBatches, getCourses, updateBatch, addRoutineEntry, updateRoutineEntry, deleteRoutineEntry } from '../services/api';
+import { getRoutine, getRooms, getFaculty, getBatches, getCourses, updateBatch, addRoutineEntry, updateRoutineEntry, deleteRoutineEntry, getSettings } from '../services/api';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import { Download, Check, X, MapPin, Plus, Edit2, Trash } from 'lucide-react';
@@ -7,6 +7,8 @@ import { Button } from './ui/Button';
 import toast from 'react-hot-toast';
 import { cn } from '../lib/utils';
 import { useNavigate } from 'react-router-dom';
+import SettingsModal from './SettingsModal';
+import { Settings } from 'lucide-react';
 
 const WeekRoutineView = ({ overtimeVisibility, setOvertimeVisibility }) => {
     const [routine, setRoutine] = useState([]);
@@ -38,6 +40,13 @@ const WeekRoutineView = ({ overtimeVisibility, setOvertimeVisibility }) => {
     // Multi-Class Selection Modal State
     const [selectionModalData, setSelectionModalData] = useState(null); // { classes: [], batchId: '' }
 
+    // Settings State
+    const [showSettingsModal, setShowSettingsModal] = useState(false);
+    const [scheduleSettings, setScheduleSettings] = useState({
+        general: { theory_slots: [], lab_slots: [], slot_mapping: {} },
+        daily_overrides: {}
+    });
+
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -46,12 +55,13 @@ const WeekRoutineView = ({ overtimeVisibility, setOvertimeVisibility }) => {
 
     const fetchData = async () => {
         try {
-            const [routineRes, roomsRes, facultyRes, batchesRes, coursesRes] = await Promise.all([
+            const [routineRes, roomsRes, facultyRes, batchesRes, coursesRes, settingsRes] = await Promise.all([
                 getRoutine(),
                 getRooms(),
                 getFaculty(),
                 getBatches(),
-                getCourses()
+                getCourses(),
+                getSettings()
             ]);
             setRoutine(routineRes.data);
             setMetadata({
@@ -60,6 +70,14 @@ const WeekRoutineView = ({ overtimeVisibility, setOvertimeVisibility }) => {
                 batches: batchesRes.data,
                 courses: coursesRes.data
             });
+            if (settingsRes.data.success) {
+                const settingsData = settingsRes.data.data;
+                setScheduleSettings(settingsData);
+                // Update form default if theory slots available in general config
+                if (settingsData.general?.theory_slots?.length > 0) {
+                    setNewClassData(prev => ({ ...prev, time: settingsData.general.theory_slots[0] }));
+                }
+            }
             setLoading(false);
         } catch (err) {
             console.error(err);
@@ -103,10 +121,22 @@ const WeekRoutineView = ({ overtimeVisibility, setOvertimeVisibility }) => {
 
     // Sync table width to top scrollbar
     useEffect(() => {
-        if (tableContainerRef.current) {
-            setTableWidth(tableContainerRef.current.scrollWidth);
-        }
-    }, [routine, metadata, overtimeVisibility]);
+        const updateWidth = () => {
+            if (tableContainerRef.current) {
+                setTableWidth(tableContainerRef.current.scrollWidth);
+            }
+        };
+
+        updateWidth();
+        // Also update after a short delay for any rendering settle
+        const timer = setTimeout(updateWidth, 100);
+
+        window.addEventListener('resize', updateWidth);
+        return () => {
+            clearTimeout(timer);
+            window.removeEventListener('resize', updateWidth);
+        };
+    }, [routine, metadata, overtimeVisibility, loading]);
 
     const handleBatchRoomUpdate = async (batchId) => {
         if (!selectedBatchRoom) return;
@@ -248,29 +278,16 @@ const WeekRoutineView = ({ overtimeVisibility, setOvertimeVisibility }) => {
         return false;
     };
 
-    const fullTheorySlots = [
-        "08:00-09:15", "09:15-10:30", "10:45-12:00", "12:00-01:15", "02:00-03:15", "03:15-04:30", "04:30-05:45", "05:45-07:00"
-    ];
-
-    const getVisibleSlots = (day) => {
-        return overtimeVisibility[day] ? fullTheorySlots : fullTheorySlots.slice(0, 6);
+    // Helper to get configuration for a specific day
+    const getConfigForDay = (day) => {
+        if (!scheduleSettings.daily_overrides) return scheduleSettings.general || { theory_slots: [], lab_slots: [], slot_mapping: {} };
+        return scheduleSettings.daily_overrides[day] || scheduleSettings.general;
     };
 
-    // Keep for reference if needed, but we'll use getVisibleSlots(day) mainly
-    const theorySlots = fullTheorySlots;
-
-    const labSlots = [
-        "08:00-10:30",
-        "10:45-01:15",
-        "02:00-04:30",
-        "04:30-07:00"
-    ];
-
-    const slotMapping = {
-        "08:00-09:15": "08:00-10:30",
-        "10:45-12:00": "10:45-01:15",
-        "02:00-03:15": "02:00-04:30",
-        "04:30-05:45": "04:30-07:00"
+    const getVisibleSlots = (day) => {
+        const config = getConfigForDay(day);
+        const theorySlots = config.theory_slots;
+        return overtimeVisibility[day] ? theorySlots : theorySlots.slice(0, 6);
     };
 
     const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
@@ -278,7 +295,8 @@ const WeekRoutineView = ({ overtimeVisibility, setOvertimeVisibility }) => {
     const renderRawCell = (batchId, timeSlot, currentDay) => {
         // Find class for specific day
         const specificDayRoutine = routine.filter(r => r.day === currentDay);
-        const labSlot = slotMapping[timeSlot];
+        const dayConfig = getConfigForDay(currentDay);
+        const labSlot = dayConfig.slot_mapping[timeSlot];
 
         // Filter all matching entries instead of finding just one
         const classInfos = specificDayRoutine.filter(r =>
@@ -317,23 +335,30 @@ const WeekRoutineView = ({ overtimeVisibility, setOvertimeVisibility }) => {
         toast.success("PDF Download not yet fully supported for Week View");
     };
 
-    // Determine active time slots based on selected course
+    // Determine active time slots based on selected course and day in add modal
+    const modalDayConfig = getConfigForDay(newClassData.day);
+    const theorySlots = modalDayConfig.theory_slots;
+    const labSlots = modalDayConfig.lab_slots;
     const activeTimeSlots = isLabCourse(newClassData.courseId) ? labSlots : theorySlots;
 
     return (
-        <div className="space-y-6 flex flex-col h-[calc(100vh-140px)] overflow-x-hidden px-4 relative">
+        <div className="space-y-6 flex flex-col max-w-[100vw] overflow-x-hidden px-4 relative">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
                     <h2 className="text-3xl font-bold tracking-tight text-foreground">Weekly Schedule</h2>
                     <p className="text-muted-foreground mt-1">Full Week Overview</p>
                 </div>
+                <Button variant="outline" onClick={() => setShowSettingsModal(true)}>
+                    <Settings className="mr-2 h-4 w-4" />
+                    Settings
+                </Button>
                 {/* <Button variant="outline" onClick={downloadPDF}>
                     <Download className="mr-2 h-4 w-4" />
                     Download PDF
                 </Button> */}
             </div>
 
-            <div className="bg-card rounded-lg border border-border shadow-sm overflow-hidden">
+            <div className="bg-card rounded-lg border border-border shadow-sm">
                 {/* Top Scrollbar */}
                 <div
                     ref={topScrollContainerRef}
@@ -440,9 +465,11 @@ const WeekRoutineView = ({ overtimeVisibility, setOvertimeVisibility }) => {
                                             let colSpan = 1;
 
                                             if (currentData && currentData.length > 0) {
+                                                const dayConfig = getConfigForDay(day);
+                                                const currentDayLabSlots = dayConfig.lab_slots;
                                                 // Use the first entry to determine colspan (assuming aligned slots)
                                                 const firstEntry = currentData[0];
-                                                if (firstEntry.isLab && labSlots.includes(firstEntry.originalTime)) {
+                                                if (firstEntry.isLab && currentDayLabSlots.includes(firstEntry.originalTime)) {
                                                     colSpan = 2;
                                                 }
                                             }
@@ -719,6 +746,13 @@ const WeekRoutineView = ({ overtimeVisibility, setOvertimeVisibility }) => {
                     </div>
                 )
             }
+
+            {/* Settings Modal */}
+            <SettingsModal
+                isOpen={showSettingsModal}
+                onClose={() => setShowSettingsModal(false)}
+                onSettingsUpdated={(newSettings) => setScheduleSettings(newSettings)}
+            />
         </div >
     );
 };

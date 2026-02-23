@@ -86,6 +86,19 @@ class DBRepository {
         }
         return false;
     }
+
+    // Settings
+    getSettings() {
+        const db = this._readDB();
+        return db.settings || {};
+    }
+
+    updateSettings(updates) {
+        const db = this._readDB();
+        db.settings = { ...(db.settings || {}), ...updates };
+        this._writeDB(db);
+        return db.settings;
+    }
 }
 
 module.exports = new DBRepository();
