@@ -1,0 +1,375 @@
+[
+  {
+    "name": "Md. Mahedi Hasan",
+    "initials": "MAH",
+    "type": "Permanent",
+    "email": "mah@nwu.edu.bd",
+    "id": 101
+  },
+  {
+    "name": "Tajul Islam",
+    "initials": "TI",
+    "type": "Permanent",
+    "email": "ti@nwu.edu.bd",
+    "id": 102
+  },
+  {
+    "name": "Nurjahan Akter Jolly",
+    "initials": "NAJ",
+    "type": "Permanent",
+    "email": "naj@nwu.edu.bd",
+    "id": 103
+  },
+  {
+    "name": "Istyaque Ahammed",
+    "initials": "IA",
+    "type": "Permanent",
+    "email": "ia@nwu.edu.bd",
+    "id": 104
+  },
+  {
+    "name": "Swapnil Pranta Mistry",
+    "initials": "SPM",
+    "type": "Permanent",
+    "email": "spm@nwu.edu.bd",
+    "id": 105
+  },
+  {
+    "name": "Md. Mahmudul Hasan",
+    "initials": "MMH",
+    "type": "Permanent",
+    "email": "mmh@nwu.edu.bd",
+    "id": 106
+  },
+  {
+    "name": "Dr. Md. Inzamam-Ul-Hossain",
+    "initials": "IUH",
+    "type": "Permanent",
+    "email": "iuh@nwu.edu.bd",
+    "id": 107
+  },
+  {
+    "name": "M. Raihan",
+    "initials": "MRI",
+    "type": "Permanent",
+    "email": "mri@nwu.edu.bd",
+    "id": 108
+  },
+  {
+    "name": "Abu Naim Khan",
+    "initials": "ANK",
+    "type": "Permanent",
+    "email": "ank@nwu.edu.bd",
+    "id": 109
+  },
+  {
+    "name": "Jannatul Ferdous",
+    "initials": "JF",
+    "type": "Permanent",
+    "email": "jf@nwu.edu.bd",
+    "id": 110
+  },
+  {
+    "name": "Sumaiya Jannati",
+    "initials": "SJ",
+    "type": "Permanent",
+    "email": "sj@nwu.edu.bd",
+    "id": 111
+  },
+  {
+    "name": "Sahida Islam Mou",
+    "initials": "SIM",
+    "type": "Permanent",
+    "email": "sim@nwu.edu.bd",
+    "id": 112
+  },
+  {
+    "name": "Nagib Mahfuz",
+    "initials": "NM",
+    "type": "Permanent",
+    "email": "nm@nwu.edu.bd",
+    "id": 113
+  },
+  {
+    "name": "Sharmina Al-Azad",
+    "initials": "SAA",
+    "type": "Permanent",
+    "email": "saa@nwu.edu.bd",
+    "id": 114
+  },
+  {
+    "name": "Nusrat Jahan Urme",
+    "initials": "NJU",
+    "type": "Permanent",
+    "email": "nju@nwu.edu.bd",
+    "id": 115
+  },
+  {
+    "name": "Mahamudul Hassan Milon",
+    "initials": "MHM",
+    "type": "Permanent",
+    "email": "mhm@nwu.edu.bd",
+    "id": 116
+  },
+  {
+    "name": "Md. Asaduzzaman",
+    "initials": "AZ",
+    "type": "Permanent",
+    "email": "az@nwu.edu.bd",
+    "id": 117
+  },
+  {
+    "name": "Tahsin Ahmed Chowdhury",
+    "initials": "TAC",
+    "type": "Permanent",
+    "email": "tac@nwu.edu.bd",
+    "id": 118
+  },
+  {
+    "name": "Prof. Dr. Anupam Kumar Bairagi",
+    "initials": "AKB",
+    "type": "Guest",
+    "email": "akb@ku.ac.bd",
+    "id": 119
+  },
+  {
+    "name": "Prof. Dr. G M Atiqur Rahaman",
+    "initials": "GMAR",
+    "type": "Guest",
+    "email": "gmar@ku.ac.bd",
+    "id": 120
+  },
+  {
+    "name": "Prof. Prokash Chondra Adhikary",
+    "initials": "PCA",
+    "type": "Guest",
+    "email": "pca@nwu.edu.bd",
+    "id": 121
+  },
+  {
+    "name": "Nazirul Hasan Shawon",
+    "initials": "NHS",
+    "type": "Guest",
+    "email": "nhs@kuet.ac.bd",
+    "id": 122
+  },
+  {
+    "name": "Farzana Akther",
+    "initials": "FA",
+    "type": "Guest",
+    "email": "fa@nwu.edu.bd",
+    "id": 123
+  },
+  {
+    "name": "Md. Anisur Rahman",
+    "initials": "AR",
+    "type": "Guest",
+    "email": "ar@nwu.edu.bd",
+    "id": 124
+  },
+  {
+    "name": "Md. Mehedi Hasan",
+    "initials": "MH(B)",
+    "type": "Guest",
+    "email": "mhb@nwu.edu.bd",
+    "id": 125
+  },
+  {
+    "name": "Md. Shohel Rana",
+    "initials": "MSR",
+    "type": "Guest",
+    "email": "msr@nwu.edu.bd",
+    "id": 126
+  },
+  {
+    "name": "Jobayra Afsana",
+    "initials": "JA",
+    "type": "Guest",
+    "email": "ja@nwu.edu.bd",
+    "id": 127
+  },
+  {
+    "name": "Zahrul Jannat Peya",
+    "initials": "ZJ",
+    "type": "Guest",
+    "email": "zj@kau.edu.bd",
+    "id": 128
+  },
+  {
+    "name": "Chandan Biswas",
+    "initials": "CB",
+    "type": "Guest",
+    "email": "cb@ruet.ac.bd",
+    "id": 129
+  },
+  {
+    "name": "Kazi Saeed Alam",
+    "initials": "KSA",
+    "type": "Guest",
+    "email": "ksa@kuet.ac.bd",
+    "id": 130
+  },
+  {
+    "name": "Sheikh Md. Masum Zameel",
+    "initials": "SMM",
+    "type": "Guest",
+    "email": "smm@nwu.edu.bd",
+    "id": 131
+  },
+  {
+    "name": "Md. Shamim Reza",
+    "initials": "SR",
+    "type": "Guest",
+    "email": "sr@nwu.edu.bd",
+    "id": 132
+  },
+  {
+    "name": "Shakil Ahmed",
+    "initials": "SA",
+    "type": "Guest",
+    "email": "sa@nwu.edu.bd",
+    "id": 133
+  },
+  {
+    "name": "Hafsa Siddique",
+    "initials": "HS",
+    "type": "Guest",
+    "email": "hs@nwu.edu.bd",
+    "id": 134
+  },
+  {
+    "name": "Rukaiya Basri",
+    "initials": "RB",
+    "type": "Guest",
+    "email": "rb@nwu.edu.bd",
+    "id": 135
+  },
+  {
+    "name": "Arnab Talukder",
+    "initials": "AT",
+    "type": "Guest",
+    "email": "at@nwu.edu.bd",
+    "id": 136
+  },
+  {
+    "name": "S.M Fahim Islam",
+    "initials": "FI",
+    "type": "Guest",
+    "email": "fi@nwu.edu.bd",
+    "id": 137
+  },
+  {
+    "name": "Titu Nath",
+    "initials": "TN",
+    "type": "Guest",
+    "email": "tn@kuet.ac.bd",
+    "id": 138
+  },
+  {
+    "name": "Sagar Kundu",
+    "initials": "SK",
+    "type": "Guest",
+    "email": "sk@nwu.edu.bd",
+    "id": 139
+  },
+  {
+    "name": "Abdullah Ahmed",
+    "initials": "AA",
+    "type": "Guest",
+    "email": "aa@nwu.edu.bd",
+    "id": 140
+  },
+  {
+    "name": "Md. Fahad Mollik",
+    "initials": "FM",
+    "type": "Guest",
+    "email": "fm@nwu.edu.bd",
+    "id": 141
+  },
+  {
+    "name": "Md. Sohid Jaman Sumon",
+    "initials": "SJS",
+    "type": "Guest",
+    "email": "sjs@nwu.edu.bd",
+    "id": 142
+  },
+  {
+    "name": "Zahid Ur Rasid",
+    "initials": "ZR",
+    "type": "Guest",
+    "email": "zr@nwu.edu.bd",
+    "id": 143
+  },
+  {
+    "name": "Md. Raihan Khan",
+    "initials": "MRK",
+    "type": "Guest",
+    "email": "mrk@nwu.edu.bd",
+    "id": 144
+  },
+  {
+    "name": "Apurbo Saikat Roy",
+    "initials": "ASR",
+    "type": "Guest",
+    "email": "asr@nwu.edu.bd",
+    "id": 145
+  },
+  {
+    "name": "Tanbir Hossain",
+    "initials": "TH",
+    "type": "Guest",
+    "email": "th@nwu.edu.bd",
+    "id": 146
+  },
+  {
+    "name": "Md. Rezanul Islam",
+    "initials": "MRZI",
+    "type": "Guest",
+    "email": "mrzi@nwu.edu.bd",
+    "id": 147
+  },
+  {
+    "name": "Ferdouse Yesmin Pinky",
+    "initials": "FYP",
+    "type": "Guest",
+    "email": "fyp@nwu.edu.bd",
+    "id": 148
+  },
+  {
+    "name": "Sourav Kumar Kha",
+    "initials": "SKK",
+    "type": "Guest",
+    "email": "skk@nwu.edu.bd",
+    "id": 149
+  },
+  {
+    "name": "Abdullah Al Mamun",
+    "initials": "AAM",
+    "type": "Guest",
+    "email": "aam@nwu.edu.bd",
+    "id": 150
+  },
+  {
+    "name": "Md. Masum Howlader",
+    "initials": "MH",
+    "type": "Guest",
+    "email": "mh@nwu.edu.bd",
+    "id": 151
+  },
+  {
+    "name": "Tasnia Zaman Shashwaty",
+    "initials": "TZS",
+    "type": "Guest",
+    "email": "tzs@nwu.edu.bd",
+    "id": 152
+  },
+  {
+    "name": "Howlader Mehedi Hasan",
+    "type": "Adjunct",
+    "email": "hmh.cse@gmail.com",
+    "initials": "HMH",
+    "designation": "Adjunct Faculty",
+    "phone": "+8801648291385",
+    "id": 153
+  }
+]

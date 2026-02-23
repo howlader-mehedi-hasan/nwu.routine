@@ -1,0 +1,128 @@
+[
+  {
+    "day": "Monday",
+    "time": "09:15-10:30",
+    "batch_id": 401,
+    "course_id": 203,
+    "faculty_id": 101,
+    "room_id": 301,
+    "id": "17718502424970"
+  },
+  {
+    "day": "Monday",
+    "time": "10:45-01:15",
+    "batch_id": 401,
+    "course_id": 204,
+    "faculty_id": 101,
+    "room_id": 317,
+    "id": "17718502424971"
+  },
+  {
+    "day": "Monday",
+    "time": "08:00-09:15",
+    "batch_id": 401,
+    "course_id": 201,
+    "faculty_id": 149,
+    "room_id": 301,
+    "id": "17718502424972"
+  },
+  {
+    "day": "Monday",
+    "time": "10:45-01:15",
+    "batch_id": 403,
+    "course_id": 204,
+    "faculty_id": 102,
+    "room_id": 301,
+    "id": "17718502424973"
+  },
+  {
+    "day": "Monday",
+    "time": "08:00-09:15",
+    "batch_id": 402,
+    "course_id": 203,
+    "faculty_id": 101,
+    "room_id": 318,
+    "id": "17718502424974"
+  },
+  {
+    "day": "Monday",
+    "time": "10:45-12:00",
+    "batch_id": 404,
+    "course_id": 211,
+    "faculty_id": 108,
+    "room_id": 305,
+    "id": "17718502424975"
+  },
+  {
+    "day": "Monday",
+    "time": "02:00-03:15",
+    "batch_id": 401,
+    "course_id": 209,
+    "faculty_id": 129,
+    "room_id": 301,
+    "id": "17718502424976"
+  },
+  {
+    "day": "Monday",
+    "time": "08:00-10:30",
+    "batch_id": 404,
+    "course_id": 202,
+    "faculty_id": 112,
+    "room_id": 317,
+    "id": "17718502424977"
+  },
+  {
+    "day": "Monday",
+    "time": "08:00-09:15",
+    "batch_id": 404,
+    "course_id": 210,
+    "faculty_id": 110,
+    "room_id": 317,
+    "id": "17718502424978"
+  },
+  {
+    "day": "Monday",
+    "time": "08:00-10:30",
+    "batch_id": 406,
+    "course_id": 216,
+    "faculty_id": 103,
+    "room_id": 318,
+    "id": "17718502424979"
+  },
+  {
+    "day": "Monday",
+    "time": "08:00-10:30",
+    "batch_id": 406,
+    "course_id": 210,
+    "faculty_id": 136,
+    "room_id": 321,
+    "id": "177185024249710"
+  },
+  {
+    "day": "Tuesday",
+    "time": "02:00-04:30",
+    "batch_id": 403,
+    "course_id": 206,
+    "faculty_id": 101,
+    "room_id": 301,
+    "id": "177185024249711"
+  },
+  {
+    "day": "Tuesday",
+    "time": "08:00-10:30",
+    "batch_id": 403,
+    "course_id": 206,
+    "faculty_id": 107,
+    "room_id": 301,
+    "id": "177185024249712"
+  },
+  {
+    "id": "1771851272018",
+    "day": "Monday",
+    "time": "02:00-03:15",
+    "batch_id": 402,
+    "course_id": 215,
+    "faculty_id": 118,
+    "room_id": null
+  }
+]

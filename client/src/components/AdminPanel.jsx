@@ -497,12 +497,12 @@ const AdminPanel = () => {
                                         const query = searchQuery.toLowerCase();
                                         let matchesSearch = false;
                                         if (activeTab === 'faculty') {
-                                            matchesSearch = item.name.toLowerCase().includes(query) ||
-                                                item.initials.toLowerCase().includes(query) ||
-                                                item.email.toLowerCase().includes(query);
+                                            matchesSearch = String(item.name || '').toLowerCase().includes(query) ||
+                                                String(item.initials || '').toLowerCase().includes(query) ||
+                                                String(item.email || '').toLowerCase().includes(query);
                                         } else if (activeTab === 'courses') {
-                                            matchesSearch = item.name.toLowerCase().includes(query) ||
-                                                item.code.toLowerCase().includes(query);
+                                            matchesSearch = String(item.name || '').toLowerCase().includes(query) ||
+                                                String(item.code || '').toLowerCase().includes(query);
                                         } else if (activeTab === 'rooms') {
                                             matchesSearch = String(item.room_number).toLowerCase().includes(query);
                                         } else if (activeTab === 'batches') {
@@ -536,10 +536,6 @@ const AdminPanel = () => {
                                             className={`bg-card p-4 rounded-xl border border-border shadow-sm flex flex-col justify-between group transition-all hover:border-indigo-500/30 ${editingId === item.id ? 'ring-2 ring-indigo-500' : ''}`}
                                         >
                                             <div className="space-y-1 mb-4">
-                                                <div className="flex justify-between items-start">
-                                                    <span className="text-xs font-mono text-muted-foreground bg-muted px-2 py-0.5 rounded">ID: {item.id}</span>
-                                                </div>
-
                                                 {/* Dynamic Content Rendering */}
                                                 {activeTab === 'faculty' && (
                                                     <>
@@ -573,7 +569,10 @@ const AdminPanel = () => {
                                                     <>
                                                         <h4 className="font-semibold text-foreground">{item.name}</h4>
                                                         <p className="text-sm text-muted-foreground">
-                                                            Section: {item.section} • Room: {rooms.find(r => String(r.id) === String(item.default_room_id))?.room_number || 'N/A'}
+                                                            Section: {item.section}
+                                                            {rooms.find(r => String(r.id) === String(item.default_room_id))?.room_number
+                                                                ? ` • Room: ${rooms.find(r => String(r.id) === String(item.default_room_id)).room_number}`
+                                                                : ''}
                                                         </p>
                                                     </>
                                                 )}

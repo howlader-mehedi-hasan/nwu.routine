@@ -1,103 +1,110 @@
 const fs = require('fs');
 const path = require('path');
 
-const DB_PATH = path.join(__dirname, '../data/db.json');
+const DATA_DIR = path.join(__dirname, '../data');
 
 class DBRepository {
     constructor() {
-        this.dbPath = DB_PATH;
-    }
-
-    // Helper to read DB
-    _readDB() {
-        try {
-            const data = fs.readFileSync(this.dbPath, 'utf8');
-            return JSON.parse(data);
-        } catch (err) {
-            console.error("Error reading DB:", err);
-            return {};
+        this.dataDir = DATA_DIR;
+        if (!fs.existsSync(this.dataDir)) {
+            fs.mkdirSync(this.dataDir, { recursive: true });
         }
     }
 
-    // Helper to write DB
-    _writeDB(data) {
+    _getFilePath(collectionName) {
+        return path.join(this.dataDir, `${collectionName}.json`);
+    }
+
+    // Helper to read DB for a specific collection
+    _readCollection(collectionName) {
+        const filePath = this._getFilePath(collectionName);
         try {
-            fs.writeFileSync(this.dbPath, JSON.stringify(data, null, 2));
+            if (fs.existsSync(filePath)) {
+                const data = fs.readFileSync(filePath, 'utf8');
+                return JSON.parse(data);
+            }
+        } catch (err) {
+            console.error(`Error reading ${collectionName} DB:`, err);
+        }
+
+        // Default values based on collection
+        if (collectionName === 'settings') return {};
+        return [];
+    }
+
+    // Helper to write DB for a specific collection
+    _writeCollection(collectionName, data) {
+        const filePath = this._getFilePath(collectionName);
+        try {
+            fs.writeFileSync(filePath, JSON.stringify(data, null, 2), 'utf8');
             return true;
         } catch (err) {
-            console.error("Error writing DB:", err);
+            console.error(`Error writing ${collectionName} DB:`, err);
             return false;
         }
     }
 
     // Generic Get All
     getAll(collectionName) {
-        const db = this._readDB();
-        return db[collectionName] || [];
+        return this._readCollection(collectionName);
     }
 
     // Generic Get By ID
     getById(collectionName, id) {
-        const db = this._readDB();
-        const collection = db[collectionName] || [];
+        const collection = this._readCollection(collectionName);
         return collection.find(item => item.id == id);
     }
 
     // Generic Create
     create(collectionName, item) {
-        const db = this._readDB();
-        if (!db[collectionName]) db[collectionName] = [];
+        const collection = this._readCollection(collectionName);
 
         // Generate simple ID if not provided (max id + 1)
         if (!item.id) {
-            const maxId = db[collectionName].reduce((max, i) => (i.id > max ? i.id : max), 0);
+            const maxId = collection.reduce((max, i) => (i.id > max ? i.id : max), 0);
             item.id = maxId + 1;
         }
 
-        db[collectionName].push(item);
-        this._writeDB(db);
+        collection.push(item);
+        this._writeCollection(collectionName, collection);
         return item;
     }
 
     // Generic Update
     update(collectionName, id, updates) {
-        const db = this._readDB();
-        if (!db[collectionName]) return null;
-
-        const index = db[collectionName].findIndex(item => item.id == id);
+        const collection = this._readCollection(collectionName);
+        const index = collection.findIndex(item => item.id == id);
         if (index === -1) return null;
 
-        db[collectionName][index] = { ...db[collectionName][index], ...updates };
-        this._writeDB(db);
-        return db[collectionName][index];
+        collection[index] = { ...collection[index], ...updates };
+        this._writeCollection(collectionName, collection);
+        return collection[index];
     }
 
     // Generic Delete
     delete(collectionName, id) {
-        const db = this._readDB();
-        if (!db[collectionName]) return false;
+        let collection = this._readCollection(collectionName);
+        const initialLength = collection.length;
 
-        const initialLength = db[collectionName].length;
-        db[collectionName] = db[collectionName].filter(item => item.id != id);
+        collection = collection.filter(item => item.id != id);
 
-        if (db[collectionName].length < initialLength) {
-            this._writeDB(db);
+        if (collection.length < initialLength) {
+            this._writeCollection(collectionName, collection);
             return true;
         }
         return false;
     }
 
-    // Settings
+    // Settings (special handling)
     getSettings() {
-        const db = this._readDB();
-        return db.settings || {};
+        return this._readCollection('settings');
     }
 
     updateSettings(updates) {
-        const db = this._readDB();
-        db.settings = { ...(db.settings || {}), ...updates };
-        this._writeDB(db);
-        return db.settings;
+        const settings = this._readCollection('settings');
+        const newSettings = { ...settings, ...updates };
+        this._writeCollection('settings', newSettings);
+        return newSettings;
     }
 }
 

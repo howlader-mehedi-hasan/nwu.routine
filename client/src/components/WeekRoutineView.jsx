@@ -9,8 +9,11 @@ import { cn } from '../lib/utils';
 import { useNavigate } from 'react-router-dom';
 import SettingsModal from './SettingsModal';
 import { Settings } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
 
 const WeekRoutineView = ({ overtimeVisibility, setOvertimeVisibility }) => {
+    const { user } = useAuth();
+    const canEdit = user && ['Super Admin', 'Admin'].includes(user.role);
     const [routine, setRoutine] = useState([]);
     const [metadata, setMetadata] = useState({ rooms: [], faculty: [], batches: [], courses: [] });
     const [loading, setLoading] = useState(true);
@@ -192,7 +195,7 @@ const WeekRoutineView = ({ overtimeVisibility, setOvertimeVisibility }) => {
     };
 
     const handleSaveClass = async () => {
-        if (!newClassData.courseId || !newClassData.facultyId || !newClassData.roomId) {
+        if (!newClassData.courseId || !newClassData.facultyId) {
             toast.error('Please fill all fields');
             return;
         }
@@ -329,10 +332,25 @@ const WeekRoutineView = ({ overtimeVisibility, setOvertimeVisibility }) => {
         });
     };
 
-    // Note: PDF download for Week View might be complex due to width, skipping for now or implementing basic version
     const downloadPDF = () => {
-        // Placeholder or Basic implementation
-        toast.success("PDF Download not yet fully supported for Week View");
+        const doc = new jsPDF('l', 'mm', 'a3');
+        doc.setFontSize(18);
+        doc.text("Weekly Class Routine", 14, 15);
+        doc.setFontSize(10);
+        doc.text(`Generated: ${new Date().toLocaleDateString()}`, 14, 22);
+
+        doc.autoTable({
+            html: '#week-routine-table',
+            startY: 25,
+            theme: 'grid',
+            styles: { fontSize: 7, cellPadding: 1.5, halign: 'center', valign: 'middle' },
+            headStyles: { fillColor: [79, 70, 229], textColor: 255, fontSize: 8 },
+            columnStyles: { 0: { halign: 'left', fontStyle: 'bold', cellWidth: 25 } },
+            useCss: true // Helps parse rowspans and colspans
+        });
+
+        doc.save(`weekly_routine.pdf`);
+        toast.success('PDF downloaded!');
     };
 
     // Determine active time slots based on selected course and day in add modal
@@ -348,14 +366,18 @@ const WeekRoutineView = ({ overtimeVisibility, setOvertimeVisibility }) => {
                     <h2 className="text-3xl font-bold tracking-tight text-foreground">Weekly Schedule</h2>
                     <p className="text-muted-foreground mt-1">Full Week Overview</p>
                 </div>
-                <Button variant="outline" onClick={() => setShowSettingsModal(true)}>
-                    <Settings className="mr-2 h-4 w-4" />
-                    Settings
-                </Button>
-                {/* <Button variant="outline" onClick={downloadPDF}>
-                    <Download className="mr-2 h-4 w-4" />
-                    Download PDF
-                </Button> */}
+                {canEdit && (
+                    <Button variant="outline" onClick={() => setShowSettingsModal(true)}>
+                        <Settings className="mr-2 h-4 w-4" />
+                        Settings
+                    </Button>
+                )}
+                {user && (
+                    <Button variant="outline" onClick={downloadPDF}>
+                        <Download className="mr-2 h-4 w-4" />
+                        Download PDF
+                    </Button>
+                )}
             </div>
 
             <div className="bg-card rounded-lg border border-border shadow-sm">
@@ -369,7 +391,7 @@ const WeekRoutineView = ({ overtimeVisibility, setOvertimeVisibility }) => {
                 </div>
 
                 <div className="overflow-x-auto" ref={tableContainerRef}>
-                    <table className="w-full text-sm text-left border-collapse">
+                    <table id="week-routine-table" className="w-full text-sm text-left border-collapse">
                         <thead className="text-xs uppercase bg-muted/50 text-muted-foreground">
                             <tr>
                                 <th className="px-4 py-4 w-32 font-bold border border-border !border-r-4 !border-r-slate-300 dark:!border-r-slate-600 text-center sticky left-0 bg-secondary z-20" rowSpan={2}>
@@ -379,21 +401,23 @@ const WeekRoutineView = ({ overtimeVisibility, setOvertimeVisibility }) => {
                                     <th key={day} colSpan={getVisibleSlots(day).length} className="px-4 py-2 border border-border !border-r-4 !border-r-slate-300 dark:!border-r-slate-600 text-center font-bold text-lg bg-indigo-100/50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-300 min-w-[200px]">
                                         <div className="flex items-center justify-center gap-2">
                                             <span>{day}</span>
-                                            <button
-                                                onClick={() => setOvertimeVisibility(prev => ({ ...prev, [day]: !prev[day] }))}
-                                                className={cn(
-                                                    "ml-2 inline-flex h-4 w-7 items-center rounded-full transition-colors focus:outline-none focus:ring-1 focus:ring-indigo-500",
-                                                    overtimeVisibility[day] ? "bg-indigo-600" : "bg-muted-foreground/30"
-                                                )}
-                                                title="Toggle Overtime"
-                                            >
-                                                <span
+                                            {canEdit && (
+                                                <button
+                                                    onClick={() => setOvertimeVisibility(prev => ({ ...prev, [day]: !prev[day] }))}
                                                     className={cn(
-                                                        "inline-block h-3 w-3 transform rounded-full bg-white transition-transform",
-                                                        overtimeVisibility[day] ? "translate-x-3.5" : "translate-x-0.5"
+                                                        "ml-2 inline-flex h-4 w-7 items-center rounded-full transition-colors focus:outline-none focus:ring-1 focus:ring-indigo-500",
+                                                        overtimeVisibility[day] ? "bg-indigo-600" : "bg-muted-foreground/30"
                                                     )}
-                                                />
-                                            </button>
+                                                    title="Toggle Overtime"
+                                                >
+                                                    <span
+                                                        className={cn(
+                                                            "inline-block h-3 w-3 transform rounded-full bg-white transition-transform",
+                                                            overtimeVisibility[day] ? "translate-x-3.5" : "translate-x-0.5"
+                                                        )}
+                                                    />
+                                                </button>
+                                            )}
                                         </div>
                                     </th>
                                 ))}
@@ -420,8 +444,12 @@ const WeekRoutineView = ({ overtimeVisibility, setOvertimeVisibility }) => {
                                         <div className="text-xs text-muted-foreground">{batch.name}</div>
                                         <div className="font-bold text-indigo-600 dark:text-indigo-400">Section {batch.section}</div>
                                         <div
-                                            className="mt-1 flex items-center gap-1 text-[10px] text-muted-foreground bg-muted/50 px-1.5 py-0.5 rounded w-fit cursor-pointer hover:bg-indigo-100 hover:text-indigo-700 transition-colors"
+                                            className={cn(
+                                                "mt-1 flex items-center gap-1 text-[10px] text-muted-foreground px-1.5 py-0.5 rounded w-fit transition-colors",
+                                                canEdit ? "bg-muted/50 cursor-pointer hover:bg-indigo-100 hover:text-indigo-700" : ""
+                                            )}
                                             onClick={() => {
+                                                if (!canEdit) return;
                                                 setEditingBatchId(batch.id);
                                                 setSelectedBatchRoom(batch.default_room_id || '');
                                             }}
@@ -450,7 +478,9 @@ const WeekRoutineView = ({ overtimeVisibility, setOvertimeVisibility }) => {
                                                     />
                                                 </div>
                                             ) : (
-                                                <span>Room: {getRoomName(batch.default_room_id)}</span>
+                                                getRoomName(batch.default_room_id) !== 'TBA' && (
+                                                    <span>Room: {getRoomName(batch.default_room_id)}</span>
+                                                )
                                             )}
                                         </div>
                                     </td>
@@ -496,17 +526,19 @@ const WeekRoutineView = ({ overtimeVisibility, setOvertimeVisibility }) => {
                                                         <div
                                                             className={cn(
                                                                 "flex flex-col items-center justify-center space-y-0.5 p-1 rounded-sm transition-colors h-full w-full relative group",
-                                                                "bg-card hover:bg-muted/50 cursor-pointer"
+                                                                canEdit ? "bg-card hover:bg-muted/50 cursor-pointer" : ""
                                                             )}
-                                                            onClick={() => handleEditClassClick(currentData, batch.id)}
+                                                            onClick={() => canEdit && handleEditClassClick(currentData, batch.id)}
                                                         >
                                                             <span className="font-bold text-foreground text-[10px] leading-[1.1]">{displayCourses}</span>
                                                             <span className="text-[9px] text-muted-foreground bg-muted px-1 py-0 rounded">
                                                                 {displayFaculty}
                                                             </span>
-                                                            <span className="text-[9px] font-mono text-indigo-500 font-medium">
-                                                                R-{displayRoom}
-                                                            </span>
+                                                            {displayRoom && displayRoom !== 'TBA' && (
+                                                                <span className="text-[9px] font-mono text-indigo-500 font-medium">
+                                                                    R-{displayRoom}
+                                                                </span>
+                                                            )}
                                                             <div className="flex gap-1">
                                                                 {isLab && (
                                                                     <span className="text-[8px] text-emerald-600 font-bold uppercase tracking-wider">LAB</span>
@@ -517,33 +549,37 @@ const WeekRoutineView = ({ overtimeVisibility, setOvertimeVisibility }) => {
                                                             </div>
 
                                                             {/* Hover Hint / Edit Overlay */}
-                                                            <span className="absolute top-0.5 right-0.5 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
-                                                                {/* If can add second, show Plus here too or just Edit? User asked for optional add. */}
-                                                                {canAddSecond && (
-                                                                    <Button
-                                                                        variant="ghost"
-                                                                        size="icon"
-                                                                        className="h-4 w-4 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-100 rounded-full"
-                                                                        onClick={(e) => {
-                                                                            e.stopPropagation();
-                                                                            handleAddClassClick(day, currentSlot, batch.id); // Add to same slot
-                                                                        }}
-                                                                        title="Add Alternate Lab"
-                                                                    >
-                                                                        <Plus className="h-3 w-3" />
-                                                                    </Button>
-                                                                )}
-                                                                <Edit2 className="h-3 w-3 text-muted-foreground" />
-                                                            </span>
+                                                            {canEdit && (
+                                                                <span className="absolute top-0.5 right-0.5 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
+                                                                    {/* If can add second, show Plus here too or just Edit? User asked for optional add. */}
+                                                                    {canAddSecond && (
+                                                                        <Button
+                                                                            variant="ghost"
+                                                                            size="icon"
+                                                                            className="h-4 w-4 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-100 rounded-full"
+                                                                            onClick={(e) => {
+                                                                                e.stopPropagation();
+                                                                                handleAddClassClick(day, currentSlot, batch.id); // Add to same slot
+                                                                            }}
+                                                                            title="Add Alternate Lab"
+                                                                        >
+                                                                            <Plus className="h-3 w-3" />
+                                                                        </Button>
+                                                                    )}
+                                                                    <Edit2 className="h-3 w-3 text-muted-foreground" />
+                                                                </span>
+                                                            )}
                                                         </div>
                                                     ) : (
-                                                        <div
-                                                            className="flex items-center justify-center w-full h-full opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer hover:bg-muted/50 rounded-sm"
-                                                            onClick={() => handleAddClassClick(day, currentSlot, batch.id)}
-                                                            title="Add Class"
-                                                        >
-                                                            <Plus className="h-4 w-4 text-muted-foreground/50 hover:text-indigo-500" />
-                                                        </div>
+                                                        canEdit && (
+                                                            <div
+                                                                className="flex items-center justify-center w-full h-full opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer hover:bg-muted/50 rounded-sm"
+                                                                onClick={() => handleAddClassClick(day, currentSlot, batch.id)}
+                                                                title="Add Class"
+                                                            >
+                                                                <Plus className="h-4 w-4 text-muted-foreground/50 hover:text-indigo-500" />
+                                                            </div>
+                                                        )
                                                     )}
                                                 </td>
                                             );
@@ -726,19 +762,27 @@ const WeekRoutineView = ({ overtimeVisibility, setOvertimeVisibility }) => {
                                 {selectionModalData.classes.map((cls) => (
                                     <div
                                         key={cls.id}
-                                        className="flex items-center justify-between p-3 rounded-md border border-border bg-muted/20 hover:bg-muted/40 transition-colors cursor-pointer"
+                                        className={cn(
+                                            "flex items-center justify-between p-3 rounded-md border border-border bg-muted/20 transition-colors",
+                                            canEdit ? "hover:bg-muted/40 cursor-pointer" : ""
+                                        )}
                                         onClick={() => {
+                                            if (!canEdit) return;
                                             setSelectionModalData(null);
                                             handleEditClassClick(cls, selectionModalData.batchId);
                                         }}
                                     >
                                         <div>
                                             <div className="font-bold text-sm">{cls.course}</div>
-                                            <div className="text-xs text-muted-foreground">{cls.faculty} | R-{cls.room}</div>
+                                            <div className="text-xs text-muted-foreground">
+                                                {cls.faculty} {cls.room && cls.room !== 'TBA' ? `| R-${cls.room}` : ''}
+                                            </div>
                                         </div>
-                                        <div className="p-1.5 rounded-full bg-primary/10 text-primary">
-                                            <Edit2 className="h-3.5 w-3.5" />
-                                        </div>
+                                        {canEdit && (
+                                            <div className="p-1.5 rounded-full bg-primary/10 text-primary">
+                                                <Edit2 className="h-3.5 w-3.5" />
+                                            </div>
+                                        )}
                                     </div>
                                 ))}
                             </div>

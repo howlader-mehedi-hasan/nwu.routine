@@ -9,8 +9,11 @@ import { Card, CardContent } from './ui/Card';
 import toast from 'react-hot-toast';
 import { cn } from '../lib/utils';
 import SettingsModal from './SettingsModal';
+import { useAuth } from '../contexts/AuthContext';
 
 const RoutineView = ({ overtimeVisibility, setOvertimeVisibility }) => {
+    const { user } = useAuth();
+    const canEdit = user && ['Super Admin', 'Admin'].includes(user.role);
     const [routine, setRoutine] = useState([]);
     const [metadata, setMetadata] = useState({ rooms: [], faculty: [], batches: [], courses: [] });
     const [loading, setLoading] = useState(true);
@@ -142,7 +145,7 @@ const RoutineView = ({ overtimeVisibility, setOvertimeVisibility }) => {
 
     const handleSave = async () => {
         // Validation
-        if (!formData.batch_id || !formData.course_id || !formData.faculty_id || !formData.room_id) {
+        if (!formData.batch_id || !formData.course_id || !formData.faculty_id) {
             toast.error("Please fill all fields");
             return;
         }
@@ -192,14 +195,13 @@ const RoutineView = ({ overtimeVisibility, setOvertimeVisibility }) => {
     };
 
     const handleBatchRoomUpdate = async (batchId) => {
-        if (!selectedBatchRoom) return;
         const loadingToast = toast.loading('Updating Default Room...');
         try {
             // Find current batch to preserve other fields
             const batch = metadata.batches.find(b => b.id === batchId);
             if (!batch) throw new Error("Batch not found");
 
-            await updateBatch(batchId, { ...batch, default_room_id: selectedBatchRoom });
+            await updateBatch(batchId, { ...batch, default_room_id: selectedBatchRoom || null });
             await fetchData();
             toast.success('Room updated!', { id: loadingToast });
             setEditingBatchId(null);
@@ -336,17 +338,20 @@ const RoutineView = ({ overtimeVisibility, setOvertimeVisibility }) => {
                     {currentData.length > 0 ? (
                         <div
                             className={cn(
-                                "flex flex-col items-center justify-center space-y-1 cursor-pointer hover:bg-muted/50 p-2 rounded-md transition-colors h-full w-full relative group"
+                                "flex flex-col items-center justify-center space-y-1 p-2 rounded-md transition-colors h-full w-full relative group",
+                                canEdit ? "cursor-pointer hover:bg-muted/50" : ""
                             )}
-                            onClick={() => openEditModal(currentData)}
+                            onClick={() => canEdit && openEditModal(currentData)}
                         >
                             <span className="font-bold text-foreground text-sm">{displayCourses}</span>
                             <span className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
                                 {displayFaculty}
                             </span>
-                            <span className="text-xs font-mono text-indigo-500 font-medium">
-                                R-{displayRoom}
-                            </span>
+                            {displayRoom && displayRoom !== 'TBA' && (
+                                <span className="text-xs font-mono text-indigo-500 font-medium">
+                                    R-{displayRoom}
+                                </span>
+                            )}
                             <div className="flex gap-1 justify-center mt-1">
                                 {isLab && (
                                     <span className="text-[10px] text-emerald-600 font-bold uppercase tracking-wider">LAB</span>
@@ -357,32 +362,36 @@ const RoutineView = ({ overtimeVisibility, setOvertimeVisibility }) => {
                             </div>
 
                             {/* Hover Hint & Add Second Button */}
-                            <span className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
-                                {canAddSecond && (
-                                    <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        className="h-5 w-5 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-100 rounded-full"
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            openAddModal({ batch_id: batchId, time: currentSlot });
-                                        }}
-                                        title="Add Alternate Lab"
-                                    >
-                                        <Plus className="h-4 w-4" />
-                                    </Button>
-                                )}
-                                <Edit2 className="h-3 w-3 text-muted-foreground" />
-                            </span>
+                            {canEdit && (
+                                <span className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
+                                    {canAddSecond && (
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            className="h-5 w-5 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-100 rounded-full"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                openAddModal({ batch_id: batchId, time: currentSlot });
+                                            }}
+                                            title="Add Alternate Lab"
+                                        >
+                                            <Plus className="h-4 w-4" />
+                                        </Button>
+                                    )}
+                                    <Edit2 className="h-3 w-3 text-muted-foreground" />
+                                </span>
+                            )}
                         </div>
                     ) : (
-                        <div
-                            className="h-full w-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer hover:bg-muted/50 rounded-md"
-                            onClick={() => openAddModal({ batch_id: batchId, time: currentSlot })}
-                            title="Add Class"
-                        >
-                            <Plus className="h-5 w-5 text-muted-foreground/50 hover:text-indigo-500" />
-                        </div>
+                        canEdit && (
+                            <div
+                                className="h-full w-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer hover:bg-muted/50 rounded-md"
+                                onClick={() => openAddModal({ batch_id: batchId, time: currentSlot })}
+                                title="Add Class"
+                            >
+                                <Plus className="h-5 w-5 text-muted-foreground/50 hover:text-indigo-500" />
+                            </div>
+                        )
                     )}
                 </td>
             );
@@ -491,9 +500,10 @@ const RoutineView = ({ overtimeVisibility, setOvertimeVisibility }) => {
                     {currentData.length > 0 ? (
                         <div
                             className={cn(
-                                "flex flex-col items-center justify-center space-y-1 cursor-pointer hover:bg-muted/50 p-2 rounded-md transition-colors h-full w-full relative group"
+                                "flex flex-col items-center justify-center space-y-1 p-2 rounded-md transition-colors h-full w-full relative group",
+                                canEdit ? "cursor-pointer hover:bg-muted/50" : ""
                             )}
-                            onClick={() => openEditModal(currentData)}
+                            onClick={() => canEdit && openEditModal(currentData)}
                         >
                             <span className="font-bold text-foreground text-sm">{displayCourses}</span>
                             <span className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
@@ -503,9 +513,11 @@ const RoutineView = ({ overtimeVisibility, setOvertimeVisibility }) => {
                                     displayFaculty
                                 )}
                             </span>
-                            <span className="text-xs font-mono text-indigo-500 font-medium">
-                                R-{displayRoom}
-                            </span>
+                            {displayRoom && displayRoom !== 'TBA' && (
+                                <span className="text-xs font-mono text-indigo-500 font-medium">
+                                    R-{displayRoom}
+                                </span>
+                            )}
                             <div className="flex gap-1 justify-center mt-1">
                                 {isLab && (
                                     <span className="text-[10px] text-emerald-600 font-bold uppercase tracking-wider">LAB</span>
@@ -516,44 +528,44 @@ const RoutineView = ({ overtimeVisibility, setOvertimeVisibility }) => {
                             </div>
 
                             {/* Hover Hint & Add Second Button */}
-                            <span className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
-                                {canAddSecond && (
-                                    <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        className="h-5 w-5 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-100 rounded-full"
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            // For Section view, batchId is fixed. For Faculty view, we might need to select batch? 
-                                            // In Faculty view, adding a class is ambiguous without batch. 
-                                            // Let's assume for now add is disabled or prompts for batch in modal.
-                                            // But openAddModal accepts overrides.
-                                            const overrides = { time: currentSlot, day: day };
-                                            if (viewMode === 'section') overrides.batch_id = selectedBatchId;
-                                            if (viewMode === 'faculty') overrides.faculty_id = selectedFacultyId;
-                                            openAddModal(overrides);
-                                        }}
-                                        title="Add Alternate Lab"
-                                    >
-                                        <Plus className="h-4 w-4" />
-                                    </Button>
-                                )}
-                                <Edit2 className="h-3 w-3 text-muted-foreground" />
-                            </span>
+                            {canEdit && (
+                                <span className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
+                                    {canAddSecond && (
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            className="h-5 w-5 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-100 rounded-full"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                const overrides = { time: currentSlot, day: day };
+                                                if (viewMode === 'section') overrides.batch_id = selectedBatchId;
+                                                if (viewMode === 'faculty') overrides.faculty_id = selectedFacultyId;
+                                                openAddModal(overrides);
+                                            }}
+                                            title="Add Alternate Lab"
+                                        >
+                                            <Plus className="h-4 w-4" />
+                                        </Button>
+                                    )}
+                                    <Edit2 className="h-3 w-3 text-muted-foreground" />
+                                </span>
+                            )}
                         </div>
                     ) : (
-                        <div
-                            className="h-full w-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer hover:bg-muted/50 rounded-md"
-                            onClick={() => {
-                                const overrides = { time: currentSlot, day: day };
-                                if (viewMode === 'section') overrides.batch_id = selectedBatchId;
-                                if (viewMode === 'faculty') overrides.faculty_id = selectedFacultyId;
-                                openAddModal(overrides);
-                            }}
-                            title="Add Class"
-                        >
-                            <Plus className="h-5 w-5 text-muted-foreground/50 hover:text-indigo-500" />
-                        </div>
+                        canEdit && (
+                            <div
+                                className="h-full w-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer hover:bg-muted/50 rounded-md"
+                                onClick={() => {
+                                    const overrides = { time: currentSlot, day: day };
+                                    if (viewMode === 'section') overrides.batch_id = selectedBatchId;
+                                    if (viewMode === 'faculty') overrides.faculty_id = selectedFacultyId;
+                                    openAddModal(overrides);
+                                }}
+                                title="Add Class"
+                            >
+                                <Plus className="h-5 w-5 text-muted-foreground/50 hover:text-indigo-500" />
+                            </div>
+                        )
                     )}
                 </td>
             );
@@ -668,18 +680,24 @@ const RoutineView = ({ overtimeVisibility, setOvertimeVisibility }) => {
                         </p>
                     </div>
                     <div className="flex space-x-3">
-                        <Button onClick={() => openAddModal()} className="shadow-lg shadow-emerald-500/20 bg-emerald-600 hover:bg-emerald-700">
-                            <Plus className="mr-2 h-4 w-4" />
-                            Add Class
-                        </Button>
-                        <Button variant="outline" onClick={() => setShowSettingsModal(true)}>
-                            <Settings className="mr-2 h-4 w-4" />
-                            Settings
-                        </Button>
-                        <Button variant="outline" onClick={downloadPDF}>
-                            <Download className="mr-2 h-4 w-4" />
-                            Download PDF
-                        </Button>
+                        {canEdit && (
+                            <>
+                                <Button onClick={() => openAddModal()} className="shadow-lg shadow-emerald-500/20 bg-emerald-600 hover:bg-emerald-700">
+                                    <Plus className="mr-2 h-4 w-4" />
+                                    Add Class
+                                </Button>
+                                <Button variant="outline" onClick={() => setShowSettingsModal(true)}>
+                                    <Settings className="mr-2 h-4 w-4" />
+                                    Settings
+                                </Button>
+                            </>
+                        )}
+                        {user && (
+                            <Button variant="outline" onClick={downloadPDF}>
+                                <Download className="mr-2 h-4 w-4" />
+                                Download PDF
+                            </Button>
+                        )}
                     </div>
                 </div>
 
@@ -717,27 +735,29 @@ const RoutineView = ({ overtimeVisibility, setOvertimeVisibility }) => {
                                 </Select>
                             </div>
 
-                            <div className="flex items-center gap-2 px-2 border-l border-border ml-2">
-                                <span className="text-xs text-muted-foreground font-medium whitespace-nowrap hidden sm:inline">Evening:</span>
-                                <button
-                                    onClick={() => setOvertimeVisibility(prev => ({
-                                        ...prev,
-                                        [selectedDay]: !prev[selectedDay]
-                                    }))}
-                                    className={cn(
-                                        "relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none focus:ring-1 focus:ring-indigo-500",
-                                        overtimeVisibility[selectedDay] ? "bg-indigo-600" : "bg-muted-foreground/30"
-                                    )}
-                                    title={`Toggle evening slots for ${selectedDay}`}
-                                >
-                                    <span
+                            {canEdit && (
+                                <div className="flex items-center gap-2 px-2 border-l border-border ml-2">
+                                    <span className="text-xs text-muted-foreground font-medium whitespace-nowrap hidden sm:inline">Evening:</span>
+                                    <button
+                                        onClick={() => setOvertimeVisibility(prev => ({
+                                            ...prev,
+                                            [selectedDay]: !prev[selectedDay]
+                                        }))}
                                         className={cn(
-                                            "inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform",
-                                            overtimeVisibility[selectedDay] ? "translate-x-4" : "translate-x-0.5"
+                                            "relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none focus:ring-1 focus:ring-indigo-500",
+                                            overtimeVisibility[selectedDay] ? "bg-indigo-600" : "bg-muted-foreground/30"
                                         )}
-                                    />
-                                </button>
-                            </div>
+                                        title={`Toggle evening slots for ${selectedDay}`}
+                                    >
+                                        <span
+                                            className={cn(
+                                                "inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform",
+                                                overtimeVisibility[selectedDay] ? "translate-x-4" : "translate-x-0.5"
+                                            )}
+                                        />
+                                    </button>
+                                </div>
+                            )}
                         </>
                     )}
 
@@ -996,27 +1016,29 @@ const RoutineView = ({ overtimeVisibility, setOvertimeVisibility }) => {
                     ))}
                 </div>
 
-                <div className="flex items-center gap-2 px-2 pb-1 sm:pb-0">
-                    <span className="text-xs text-muted-foreground font-medium whitespace-nowrap">Overtime (Evening):</span>
-                    <button
-                        onClick={() => setOvertimeVisibility(prev => ({
-                            ...prev,
-                            [selectedDay]: !prev[selectedDay]
-                        }))}
-                        className={cn(
-                            "relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2",
-                            overtimeVisibility[selectedDay] ? "bg-indigo-600" : "bg-muted"
-                        )}
-                        title={`Toggle evening slots for ${selectedDay}`}
-                    >
-                        <span
+                {canEdit && (
+                    <div className="flex items-center gap-2 px-2 pb-1 sm:pb-0">
+                        <span className="text-xs text-muted-foreground font-medium whitespace-nowrap">Overtime (Evening):</span>
+                        <button
+                            onClick={() => setOvertimeVisibility(prev => ({
+                                ...prev,
+                                [selectedDay]: !prev[selectedDay]
+                            }))}
                             className={cn(
-                                "inline-block h-4 w-4 transform rounded-full bg-white transition-transform",
-                                overtimeVisibility[selectedDay] ? "translate-x-6" : "translate-x-1"
+                                "relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2",
+                                overtimeVisibility[selectedDay] ? "bg-indigo-600" : "bg-muted"
                             )}
-                        />
-                    </button>
-                </div>
+                            title={`Toggle evening slots for ${selectedDay}`}
+                        >
+                            <span
+                                className={cn(
+                                    "inline-block h-4 w-4 transform rounded-full bg-white transition-transform",
+                                    overtimeVisibility[selectedDay] ? "translate-x-6" : "translate-x-1"
+                                )}
+                            />
+                        </button>
+                    </div>
+                )}
             </div>
 
             {/* Master Schedule Table */}
@@ -1046,8 +1068,12 @@ const RoutineView = ({ overtimeVisibility, setOvertimeVisibility }) => {
                                                     <div className="text-xs text-muted-foreground">{batch.name}</div>
                                                     <div className="font-bold text-indigo-600 dark:text-indigo-400">Section {batch.section}</div>
                                                     <div
-                                                        className="mt-1 flex items-center gap-1 text-[10px] text-muted-foreground bg-muted/50 px-2 py-1 rounded w-fit cursor-pointer hover:bg-indigo-100 hover:text-indigo-700 transition-colors"
+                                                        className={cn(
+                                                            "mt-1 flex items-center gap-1 text-[10px] text-muted-foreground px-2 py-1 rounded w-fit transition-colors",
+                                                            canEdit ? "bg-muted/50 cursor-pointer hover:bg-indigo-100 hover:text-indigo-700" : ""
+                                                        )}
                                                         onClick={() => {
+                                                            if (!canEdit) return;
                                                             setEditingBatchId(batch.id);
                                                             setSelectedBatchRoom(batch.default_room_id || '');
                                                         }}
@@ -1076,7 +1102,9 @@ const RoutineView = ({ overtimeVisibility, setOvertimeVisibility }) => {
                                                                 />
                                                             </div>
                                                         ) : (
-                                                            <span>Room: {getRoomName(batch.default_room_id)}</span>
+                                                            getRoomName(batch.default_room_id) !== 'TBA' ? (
+                                                                <span>Room: {getRoomName(batch.default_room_id)}</span>
+                                                            ) : null
                                                         )}
                                                     </div>
                                                 </td>
@@ -1130,19 +1158,27 @@ const RoutineView = ({ overtimeVisibility, setOvertimeVisibility }) => {
                                 {selectionModalData.classes.map((cls) => (
                                     <div
                                         key={cls.id}
-                                        className="flex items-center justify-between p-3 rounded-md border border-border bg-muted/20 hover:bg-muted/40 transition-colors cursor-pointer"
+                                        className={cn(
+                                            "flex items-center justify-between p-3 rounded-md border border-border bg-muted/20 transition-colors",
+                                            canEdit ? "hover:bg-muted/40 cursor-pointer" : ""
+                                        )}
                                         onClick={() => {
+                                            if (!canEdit) return;
                                             setSelectionModalData(null);
                                             openEditModal(cls);
                                         }}
                                     >
                                         <div>
                                             <div className="font-bold text-sm">{cls.course}</div>
-                                            <div className="text-xs text-muted-foreground">{cls.faculty} | R-{cls.room}</div>
+                                            <div className="text-xs text-muted-foreground">
+                                                {cls.faculty} {cls.room && cls.room !== 'TBA' ? `| R-${cls.room}` : ''}
+                                            </div>
                                         </div>
-                                        <div className="p-1.5 rounded-full bg-primary/10 text-primary">
-                                            <Edit2 className="h-3.5 w-3.5" />
-                                        </div>
+                                        {canEdit && (
+                                            <div className="p-1.5 rounded-full bg-primary/10 text-primary">
+                                                <Edit2 className="h-3.5 w-3.5" />
+                                            </div>
+                                        )}
                                     </div>
                                 ))}
                             </div>

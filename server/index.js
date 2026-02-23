@@ -11,6 +11,7 @@ app.use(cors());
 app.use(bodyParser.json());
 
 // Routes
+app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/faculty', require('./routes/facultyRoutes'));
 app.use('/api/courses', require('./routes/courseRoutes'));
 app.use('/api/rooms', require('./routes/roomRoutes'));

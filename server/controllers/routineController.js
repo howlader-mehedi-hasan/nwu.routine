@@ -7,13 +7,10 @@ exports.addRoutineEntry = (req, res) => {
     try {
         const { day, time, batch_id, course_id, faculty_id, room_id } = req.body;
 
-        if (!day || !time || !batch_id || !course_id || !faculty_id || !room_id) {
-            return res.status(400).json({ message: 'All fields are required' });
+        if (!day || !time || !batch_id || !course_id || !faculty_id) {
+            return res.status(400).json({ message: 'All fields are required except room' });
         }
 
-        const db = dbRepository._readDB();
-
-        // Create new entry
         const newEntry = {
             id: Date.now().toString(), // Simple unique ID
             day,
@@ -21,20 +18,12 @@ exports.addRoutineEntry = (req, res) => {
             batch_id: parseInt(batch_id),
             course_id: parseInt(course_id),
             faculty_id: parseInt(faculty_id),
-            room_id: parseInt(room_id)
+            room_id: room_id ? parseInt(room_id) : null
         };
 
-        // Optional: Check for conflicts (Room/Faculty/Batch busy at this time)
-        // For now, user requested "manual add", so we trust them or can add checks later.
+        const created = dbRepository.create('routine_schedule', newEntry);
 
-        if (!db.routine_schedule) {
-            db.routine_schedule = [];
-        }
-
-        db.routine_schedule.push(newEntry);
-        dbRepository._writeDB(db);
-
-        res.json({ message: 'Class added successfully', entry: newEntry });
+        res.json({ message: 'Class added successfully', entry: created });
 
     } catch (error) {
         console.error("Error adding class:", error.message);
@@ -46,23 +35,19 @@ exports.updateRoutineEntry = (req, res) => {
     try {
         const { id } = req.params;
         const updates = req.body;
-        const db = dbRepository._readDB();
 
-        const index = db.routine_schedule.findIndex(entry => entry.id === id);
+        const parsedUpdates = { ...updates };
+        if (updates.batch_id) parsedUpdates.batch_id = parseInt(updates.batch_id);
+        if (updates.course_id) parsedUpdates.course_id = parseInt(updates.course_id);
+        if (updates.faculty_id) parsedUpdates.faculty_id = parseInt(updates.faculty_id);
+        if (updates.room_id) parsedUpdates.room_id = parseInt(updates.room_id);
+        else if (updates.room_id === '' || updates.room_id === null) parsedUpdates.room_id = null;
 
-        if (index === -1) {
+        const updatedEntry = dbRepository.update('routine_schedule', id, parsedUpdates);
+
+        if (!updatedEntry) {
             return res.status(404).json({ message: 'Class not found' });
         }
-
-        // Update fields, ensuring IDs are parsed as integers if provided
-        const updatedEntry = { ...db.routine_schedule[index], ...updates };
-        if (updates.batch_id) updatedEntry.batch_id = parseInt(updates.batch_id);
-        if (updates.course_id) updatedEntry.course_id = parseInt(updates.course_id);
-        if (updates.faculty_id) updatedEntry.faculty_id = parseInt(updates.faculty_id);
-        if (updates.room_id) updatedEntry.room_id = parseInt(updates.room_id);
-
-        db.routine_schedule[index] = updatedEntry;
-        dbRepository._writeDB(db);
 
         res.json({ message: 'Class updated successfully', entry: updatedEntry });
     } catch (error) {
@@ -74,16 +59,12 @@ exports.updateRoutineEntry = (req, res) => {
 exports.deleteRoutineEntry = (req, res) => {
     try {
         const { id } = req.params;
-        const db = dbRepository._readDB();
+        const success = dbRepository.delete('routine_schedule', id);
 
-        const initialLength = db.routine_schedule.length;
-        db.routine_schedule = db.routine_schedule.filter(entry => entry.id !== id);
-
-        if (db.routine_schedule.length === initialLength) {
+        if (!success) {
             return res.status(404).json({ message: 'Class not found' });
         }
 
-        dbRepository._writeDB(db);
         res.json({ message: 'Class deleted successfully' });
     } catch (error) {
         console.error("Error deleting class:", error.message);
@@ -98,9 +79,8 @@ exports.getRoutine = (req, res) => {
 
 exports.clearRoutine = (req, res) => {
     try {
-        const db = dbRepository._readDB();
-        db.routine_schedule = [];
-        dbRepository._writeDB(db);
+        // Clear the collection using direct internal collection write
+        dbRepository._writeCollection('routine_schedule', []);
         res.json({ message: 'Routine cleared successfully' });
     } catch (error) {
         console.error("Error clearing routine:", error.message);

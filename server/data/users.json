@@ -1,0 +1,20 @@
+[
+  {
+    "id": "1771855987673",
+    "username": "hmh",
+    "email": "hmh.cse@gmail.com",
+    "password": "$2b$10$YsAq5LGEpYK2rk0kgO4ZKu4Fb59ic22vxj5Bh4W0skAPNNwbe.S9C",
+    "role": "Super Admin",
+    "status": "approved",
+    "permissions": []
+  },
+  {
+    "id": "1771856072586",
+    "username": "js",
+    "email": "jasiasultana21@gmail.com",
+    "password": "$2b$10$AEJJLhA8fQ3OhM0V3khxWutHsODw.0xgjthb6TOqDNgBRepvstqM.",
+    "role": "Student",
+    "status": "approved",
+    "permissions": []
+  }
+]

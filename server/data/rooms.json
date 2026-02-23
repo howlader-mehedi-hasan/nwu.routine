@@ -1,0 +1,163 @@
+[
+  {
+    "room_number": "301",
+    "capacity": 40,
+    "floor": 3,
+    "type": "Theory",
+    "id": 301
+  },
+  {
+    "room_number": "305",
+    "capacity": 40,
+    "floor": 3,
+    "type": "Theory",
+    "id": 302
+  },
+  {
+    "room_number": "501",
+    "capacity": 40,
+    "floor": 5,
+    "type": "Theory",
+    "id": 303
+  },
+  {
+    "room_number": "502",
+    "capacity": 40,
+    "floor": 5,
+    "type": "Theory",
+    "id": 304
+  },
+  {
+    "room_number": "503",
+    "capacity": 40,
+    "floor": 5,
+    "type": "Theory",
+    "id": 305
+  },
+  {
+    "room_number": "604",
+    "capacity": 40,
+    "floor": 6,
+    "type": "Theory",
+    "id": 306
+  },
+  {
+    "room_number": "703",
+    "capacity": 40,
+    "floor": 7,
+    "type": "Theory",
+    "id": 307
+  },
+  {
+    "room_number": "504",
+    "capacity": 40,
+    "floor": 5,
+    "type": "Theory",
+    "id": 309
+  },
+  {
+    "room_number": "702",
+    "capacity": 40,
+    "floor": 7,
+    "type": "Theory",
+    "id": 310
+  },
+  {
+    "room_number": "701",
+    "capacity": 40,
+    "floor": 7,
+    "type": "Theory",
+    "id": 311
+  },
+  {
+    "room_number": "903",
+    "capacity": 40,
+    "floor": 9,
+    "type": "Theory",
+    "id": 312
+  },
+  {
+    "room_number": "801",
+    "capacity": 40,
+    "floor": 8,
+    "type": "Theory",
+    "id": 313
+  },
+  {
+    "room_number": "704",
+    "capacity": 40,
+    "floor": 7,
+    "type": "Theory",
+    "id": 314
+  },
+  {
+    "room_number": "901",
+    "capacity": 40,
+    "floor": 9,
+    "type": "Theory",
+    "id": 315
+  },
+  {
+    "room_number": "601",
+    "capacity": 40,
+    "floor": 6,
+    "type": "Theory",
+    "id": 316
+  },
+  {
+    "room_number": "302",
+    "capacity": 40,
+    "floor": 3,
+    "type": "Lab",
+    "id": 317
+  },
+  {
+    "room_number": "303",
+    "capacity": 40,
+    "floor": 3,
+    "type": "Lab",
+    "id": 318
+  },
+  {
+    "room_number": "304",
+    "capacity": 40,
+    "floor": 3,
+    "type": "Lab",
+    "id": 319
+  },
+  {
+    "room_number": "605",
+    "capacity": 40,
+    "floor": 6,
+    "type": "Theory",
+    "id": 320
+  },
+  {
+    "room_number": "705",
+    "capacity": 40,
+    "floor": 7,
+    "type": "Lab",
+    "id": 321
+  },
+  {
+    "room_number": "901",
+    "capacity": 40,
+    "floor": 9,
+    "type": "Theory",
+    "id": 322
+  },
+  {
+    "room_number": "801",
+    "capacity": 40,
+    "floor": 8,
+    "type": "Theory",
+    "id": 323
+  },
+  {
+    "room_number": "903",
+    "capacity": 40,
+    "floor": 9,
+    "type": "Theory",
+    "id": 324
+  }
+]
