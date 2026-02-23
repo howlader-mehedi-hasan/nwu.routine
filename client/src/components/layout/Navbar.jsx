@@ -17,19 +17,19 @@ const Navbar = () => {
     ];
 
     return (
-        <nav className="border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 sticky top-0 z-50">
+        <nav className="border-b border-border bg-background/80 backdrop-blur-md sticky top-0 z-50 transition-colors duration-300">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="flex h-16 items-center justify-between">
                     {/* Logo Section */}
                     <div className="flex items-center gap-3">
-                        <div className="p-2 bg-indigo-600 rounded-lg">
-                            <GraduationCap size={24} className="text-white" />
+                        <div className="p-2 bg-primary rounded-lg shadow-sm shadow-primary/20">
+                            <GraduationCap size={24} className="text-primary-foreground" />
                         </div>
                         <div className="hidden md:block">
-                            <h1 className="text-lg font-bold text-gray-900 dark:text-white leading-none">
+                            <h1 className="text-lg font-bold text-foreground leading-none">
                                 Smart Routine
                             </h1>
-                            <p className="text-[10px] text-gray-500 font-medium tracking-wider uppercase mt-0.5">Management System</p>
+                            <p className="text-[10px] text-muted-foreground font-medium tracking-wider uppercase mt-0.5">Management System</p>
                         </div>
                     </div>
 
@@ -42,10 +42,10 @@ const Navbar = () => {
                                     key={item.path}
                                     to={item.path}
                                     className={cn(
-                                        "flex items-center space-x-2 px-4 py-2 rounded-md text-sm font-medium transition-colors",
+                                        "flex items-center space-x-2 px-4 py-2 rounded-md text-sm font-medium transition-all duration-200",
                                         isActive
-                                            ? 'bg-indigo-50 text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-400'
-                                            : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-800 hover:text-gray-900 dark:hover:text-white'
+                                            ? 'bg-primary/10 text-primary dark:bg-primary/20'
+                                            : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
                                     )}
                                 >
                                     {item.icon}
@@ -57,11 +57,11 @@ const Navbar = () => {
 
                     {/* Right Side Actions */}
                     <div className="flex items-center space-x-2">
-                        <div className="hidden md:flex items-center space-x-1 text-xs text-gray-400 mr-2 bg-gray-100 dark:bg-slate-900 px-2 py-1 rounded">
+                        <div className="hidden md:flex items-center space-x-1 text-xs text-muted-foreground mr-2 bg-muted px-2 py-1 rounded border border-border/50">
                             <Settings size={12} />
                             <span>v1.0.0 Alpha</span>
                         </div>
-                        <div className="h-6 w-px bg-gray-200 dark:bg-slate-800 mx-2 hidden md:block"></div>
+                        <div className="h-6 w-px bg-border mx-2 hidden md:block"></div>
                         <ThemeToggle />
 
                         {/* Mobile Menu Button */}
@@ -70,7 +70,7 @@ const Navbar = () => {
                                 variant="ghost"
                                 size="icon"
                                 onClick={() => setIsOpen(!isOpen)}
-                                className="h-9 w-9 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-800"
+                                className="h-9 w-9 text-muted-foreground hover:bg-accent hover:text-accent-foreground"
                             >
                                 {isOpen ? <X size={20} /> : <Menu size={20} />}
                             </Button>
@@ -81,7 +81,7 @@ const Navbar = () => {
 
             {/* Mobile Menu */}
             {isOpen && (
-                <div className="md:hidden border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 animate-in slide-in-from-top-2 duration-300">
+                <div className="md:hidden border-t border-border bg-background animate-in slide-in-from-top-2 duration-300">
                     <div className="py-2 px-4 space-y-1">
                         {menuItems.map((item) => {
                             const isActive = location.pathname === item.path;
@@ -93,8 +93,8 @@ const Navbar = () => {
                                     className={cn(
                                         "flex items-center space-x-3 px-3 py-3 rounded-md text-sm font-medium transition-colors",
                                         isActive
-                                            ? 'bg-indigo-50 text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-400'
-                                            : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-800 hover:text-gray-900 dark:hover:text-white'
+                                            ? 'bg-primary/10 text-primary dark:bg-primary/20'
+                                            : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
                                     )}
                                 >
                                     {item.icon}
@@ -103,7 +103,7 @@ const Navbar = () => {
                             );
                         })}
                         {/* Mobile Settings Link (Optional) */}
-                        <div className="flex items-center px-3 py-3 text-xs text-gray-400 bg-gray-100 dark:bg-slate-900 rounded mt-2">
+                        <div className="flex items-center px-3 py-3 text-xs text-muted-foreground bg-muted rounded mt-2 border border-border/50">
                             <Settings size={14} className="mr-2" />
                             <span>v1.0.0 Alpha</span>
                         </div>
@@ -122,7 +122,7 @@ function ThemeToggle() {
             variant="ghost"
             size="icon"
             onClick={() => setTheme(theme === "light" ? "dark" : "light")}
-            className="h-9 w-9 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-800"
+            className="h-9 w-9 text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-all duration-200"
         >
             <Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
             <Moon className="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />

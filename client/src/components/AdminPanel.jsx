@@ -504,10 +504,10 @@ const AdminPanel = () => {
                                             matchesSearch = item.name.toLowerCase().includes(query) ||
                                                 item.code.toLowerCase().includes(query);
                                         } else if (activeTab === 'rooms') {
-                                            matchesSearch = item.room_number.toLowerCase().includes(query);
+                                            matchesSearch = String(item.room_number).toLowerCase().includes(query);
                                         } else if (activeTab === 'batches') {
-                                            matchesSearch = item.name.toLowerCase().includes(query) ||
-                                                item.section.toLowerCase().includes(query);
+                                            matchesSearch = String(item.name || '').toLowerCase().includes(query) ||
+                                                String(item.section || '').toLowerCase().includes(query);
                                         }
                                         if (!matchesSearch) return false;
 
