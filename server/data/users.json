@@ -16,5 +16,41 @@
     "role": "Student",
     "status": "approved",
     "permissions": []
+  },
+  {
+    "id": "1772049728687",
+    "username": "raihan",
+    "email": "m.raihan@gmail.com",
+    "password": "$2b$10$OFtS6ozl1usH60SG5uT.guwHCj56s/2jxg7LnOWeTKnIWehWaFZJ6",
+    "role": "Department Head",
+    "status": "approved",
+    "permissions": []
+  },
+  {
+    "id": "1772052496732",
+    "username": "admintestuser",
+    "email": "test@example.com",
+    "password": "$2b$10$ghgOYG0lpuXkPfpcbScF8.1tzjpwv.Z5.T8NvRMHtx7r9nKo.YpGK",
+    "role": "Student",
+    "status": "approved",
+    "permissions": []
+  },
+  {
+    "id": "1772052564941",
+    "username": "admin",
+    "email": "admin@gmail.com",
+    "password": "$2b$10$.0vyBV29lzsvn/X0fVFpWuy/KmEmruJ7HgvlGZEcjMsvUhiH3F80m",
+    "role": "Super Admin",
+    "status": "approved",
+    "permissions": []
+  },
+  {
+    "id": "1772052767374",
+    "username": "",
+    "email": "",
+    "password": "$2b$10$KQNbSUjescYb/g47TFmcq.IIl29tmddqFEVrKePgIQYd3Rn3odKty",
+    "role": "Student",
+    "status": "approved",
+    "permissions": []
   }
 ]

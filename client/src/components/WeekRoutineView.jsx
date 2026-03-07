@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { getRoutine, getRooms, getFaculty, getBatches, getCourses, updateBatch, addRoutineEntry, updateRoutineEntry, deleteRoutineEntry, getSettings } from '../services/api';
 import jsPDF from 'jspdf';
-import 'jspdf-autotable';
+import autoTable from 'jspdf-autotable';
 import { Download, Check, X, MapPin, Plus, Edit2, Trash } from 'lucide-react';
 import { Button } from './ui/Button';
 import toast from 'react-hot-toast';
@@ -339,7 +339,7 @@ const WeekRoutineView = ({ overtimeVisibility, setOvertimeVisibility }) => {
         doc.setFontSize(10);
         doc.text(`Generated: ${new Date().toLocaleDateString()}`, 14, 22);
 
-        doc.autoTable({
+        autoTable(doc, {
             html: '#week-routine-table',
             startY: 25,
             theme: 'grid',

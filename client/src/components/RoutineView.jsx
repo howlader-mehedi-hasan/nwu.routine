@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { getRoutine, addRoutineEntry, updateRoutineEntry, deleteRoutineEntry, clearRoutine, getRooms, getFaculty, getBatches, getCourses, updateBatch, getSettings } from '../services/api';
 import jsPDF from 'jspdf';
-import 'jspdf-autotable';
+import autoTable from 'jspdf-autotable';
 import { Download, Plus, Filter, Calendar, Settings, X, Check, Trash2, Edit2, MapPin } from 'lucide-react';
 import { Button } from './ui/Button';
 import { Select } from './ui/Select';
@@ -649,7 +649,7 @@ const RoutineView = ({ overtimeVisibility, setOvertimeVisibility }) => {
             });
         }
 
-        doc.autoTable({
+        autoTable(doc, {
             head: [tableColumn],
             body: tableRows,
             startY: 25,
