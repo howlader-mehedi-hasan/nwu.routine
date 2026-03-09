@@ -4,133 +4,152 @@
     "initials": "MAH",
     "type": "Permanent",
     "email": "mah@nwu.edu.bd",
-    "id": 101
+    "id": 101,
+    "phone": "01714615916"
   },
   {
     "name": "Tajul Islam",
     "initials": "TI",
     "type": "Permanent",
     "email": "ti@nwu.edu.bd",
-    "id": 102
+    "id": 102,
+    "phone": "01952303940"
   },
   {
     "name": "Nurjahan Akter Jolly",
     "initials": "NAJ",
     "type": "Permanent",
     "email": "naj@nwu.edu.bd",
-    "id": 103
+    "id": 103,
+    "phone": "01912084444"
   },
   {
     "name": "Istyaque Ahammed",
     "initials": "IA",
     "type": "Permanent",
     "email": "ia@nwu.edu.bd",
-    "id": 104
+    "id": 104,
+    "phone": "01968-291189"
   },
   {
     "name": "Swapnil Pranta Mistry",
     "initials": "SPM",
     "type": "Permanent",
     "email": "spm@nwu.edu.bd",
-    "id": 105
+    "id": 105,
+    "phone": "01992-223592"
   },
   {
     "name": "Md. Mahmudul Hasan",
     "initials": "MMH",
     "type": "Permanent",
     "email": "mmh@nwu.edu.bd",
-    "id": 106
+    "id": 106,
+    "phone": "01827202781"
   },
   {
     "name": "Dr. Md. Inzamam-Ul-Hossain",
     "initials": "IUH",
     "type": "Permanent",
     "email": "iuh@nwu.edu.bd",
-    "id": 107
+    "id": 107,
+    "phone": "01920440044"
   },
   {
     "name": "M. Raihan",
     "initials": "MRI",
     "type": "Permanent",
     "email": "mri@nwu.edu.bd",
-    "id": 108
+    "id": 108,
+    "phone": "01714070902"
   },
   {
     "name": "Abu Naim Khan",
     "initials": "ANK",
     "type": "Permanent",
     "email": "ank@nwu.edu.bd",
-    "id": 109
+    "id": 109,
+    "phone": "01715505818"
   },
   {
     "name": "Jannatul Ferdous",
     "initials": "JF",
     "type": "Permanent",
     "email": "jf@nwu.edu.bd",
-    "id": 110
+    "id": 110,
+    "phone": "01780786361"
   },
   {
     "name": "Sumaiya Jannati",
     "initials": "SJ",
     "type": "Permanent",
     "email": "sj@nwu.edu.bd",
-    "id": 111
+    "id": 111,
+    "phone": "01996666834"
   },
   {
     "name": "Sahida Islam Mou",
     "initials": "SIM",
     "type": "Permanent",
     "email": "sim@nwu.edu.bd",
-    "id": 112
+    "id": 112,
+    "phone": "01329597779"
   },
   {
     "name": "Nagib Mahfuz",
     "initials": "NM",
     "type": "Permanent",
     "email": "nm@nwu.edu.bd",
-    "id": 113
+    "id": 113,
+    "phone": "01764699589"
   },
   {
     "name": "Sharmina Al-Azad",
     "initials": "SAA",
     "type": "Permanent",
     "email": "saa@nwu.edu.bd",
-    "id": 114
+    "id": 114,
+    "phone": "01521570095"
   },
   {
     "name": "Nusrat Jahan Urme",
     "initials": "NJU",
     "type": "Permanent",
     "email": "nju@nwu.edu.bd",
-    "id": 115
+    "id": 115,
+    "phone": "01725260407"
   },
   {
     "name": "Mahamudul Hassan Milon",
     "initials": "MHM",
     "type": "Permanent",
     "email": "mhm@nwu.edu.bd",
-    "id": 116
+    "id": 116,
+    "phone": "01719684520"
   },
   {
     "name": "Md. Asaduzzaman",
     "initials": "AZ",
     "type": "Permanent",
     "email": "az@nwu.edu.bd",
-    "id": 117
+    "id": 117,
+    "phone": "01734638383"
   },
   {
     "name": "Tahsin Ahmed Chowdhury",
     "initials": "TAC",
     "type": "Permanent",
     "email": "tac@nwu.edu.bd",
-    "id": 118
+    "id": 118,
+    "phone": "01750133457"
   },
   {
     "name": "Prof. Dr. Anupam Kumar Bairagi",
     "initials": "AKB",
     "type": "Guest",
     "email": "akb@ku.ac.bd",
-    "id": 119
+    "id": 119,
+    "phone": "01304562229"
   },
   {
     "name": "Prof. Dr. G M Atiqur Rahaman",
@@ -151,28 +170,32 @@
     "initials": "NHS",
     "type": "Guest",
     "email": "nhs@kuet.ac.bd",
-    "id": 122
+    "id": 122,
+    "phone": "01609810194"
   },
   {
     "name": "Farzana Akther",
     "initials": "FA",
     "type": "Guest",
     "email": "fa@nwu.edu.bd",
-    "id": 123
+    "id": 123,
+    "phone": "01791693648"
   },
   {
     "name": "Md. Anisur Rahman",
     "initials": "AR",
     "type": "Guest",
     "email": "ar@nwu.edu.bd",
-    "id": 124
+    "id": 124,
+    "phone": "01911776080"
   },
   {
     "name": "Md. Mehedi Hasan",
     "initials": "MH(B)",
     "type": "Guest",
     "email": "mhb@nwu.edu.bd",
-    "id": 125
+    "id": 125,
+    "phone": "01917945511"
   },
   {
     "name": "Md. Shohel Rana",
@@ -186,7 +209,8 @@
     "initials": "JA",
     "type": "Guest",
     "email": "ja@nwu.edu.bd",
-    "id": 127
+    "id": 127,
+    "phone": "01912948070"
   },
   {
     "name": "Zahrul Jannat Peya",
@@ -207,35 +231,40 @@
     "initials": "KSA",
     "type": "Guest",
     "email": "ksa@kuet.ac.bd",
-    "id": 130
+    "id": 130,
+    "phone": "01711010136"
   },
   {
     "name": "Sheikh Md. Masum Zameel",
     "initials": "SMM",
     "type": "Guest",
     "email": "smm@nwu.edu.bd",
-    "id": 131
+    "id": 131,
+    "phone": "01711235834"
   },
   {
     "name": "Md. Shamim Reza",
     "initials": "SR",
     "type": "Guest",
     "email": "sr@nwu.edu.bd",
-    "id": 132
+    "id": 132,
+    "phone": "01717657730"
   },
   {
     "name": "Shakil Ahmed",
     "initials": "SA",
     "type": "Guest",
     "email": "sa@nwu.edu.bd",
-    "id": 133
+    "id": 133,
+    "phone": "01717964716"
   },
   {
     "name": "Hafsa Siddique",
     "initials": "HS",
     "type": "Guest",
     "email": "hs@nwu.edu.bd",
-    "id": 134
+    "id": 134,
+    "phone": "01726050128"
   },
   {
     "name": "Rukaiya Basri",
@@ -270,28 +299,32 @@
     "initials": "SK",
     "type": "Guest",
     "email": "sk@nwu.edu.bd",
-    "id": 139
+    "id": 139,
+    "phone": "01996880383"
   },
   {
     "name": "Abdullah Ahmed",
     "initials": "AA",
     "type": "Guest",
     "email": "aa@nwu.edu.bd",
-    "id": 140
+    "id": 140,
+    "phone": "01715281756"
   },
   {
     "name": "Md. Fahad Mollik",
     "initials": "FM",
     "type": "Guest",
     "email": "fm@nwu.edu.bd",
-    "id": 141
+    "id": 141,
+    "phone": "01785045678"
   },
   {
     "name": "Md. Sohid Jaman Sumon",
     "initials": "SJS",
     "type": "Guest",
     "email": "sjs@nwu.edu.bd",
-    "id": 142
+    "id": 142,
+    "phone": "01635503016"
   },
   {
     "name": "Zahid Ur Rasid",
@@ -305,49 +338,56 @@
     "initials": "MRK",
     "type": "Guest",
     "email": "mrk@nwu.edu.bd",
-    "id": 144
+    "id": 144,
+    "phone": "01879439898"
   },
   {
     "name": "Apurbo Saikat Roy",
     "initials": "ASR",
     "type": "Guest",
     "email": "asr@nwu.edu.bd",
-    "id": 145
+    "id": 145,
+    "phone": "01710819119"
   },
   {
     "name": "Tanbir Hossain",
     "initials": "TH",
     "type": "Guest",
     "email": "th@nwu.edu.bd",
-    "id": 146
+    "id": 146,
+    "phone": "01623464600"
   },
   {
     "name": "Md. Rezanul Islam",
     "initials": "MRZI",
     "type": "Guest",
     "email": "mrzi@nwu.edu.bd",
-    "id": 147
+    "id": 147,
+    "phone": "01913912498"
   },
   {
     "name": "Ferdouse Yesmin Pinky",
     "initials": "FYP",
     "type": "Guest",
     "email": "fyp@nwu.edu.bd",
-    "id": 148
+    "id": 148,
+    "phone": "01681950322"
   },
   {
     "name": "Sourav Kumar Kha",
     "initials": "SKK",
     "type": "Guest",
     "email": "skk@nwu.edu.bd",
-    "id": 149
+    "id": 149,
+    "phone": "01581623807"
   },
   {
     "name": "Abdullah Al Mamun",
     "initials": "AAM",
     "type": "Guest",
     "email": "aam@nwu.edu.bd",
-    "id": 150
+    "id": 150,
+    "phone": "01969819820"
   },
   {
     "name": "Md. Masum Howlader",

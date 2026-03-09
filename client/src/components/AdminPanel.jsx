@@ -158,7 +158,7 @@ const AdminPanel = () => {
     };
 
     const filteredData = useMemo(() => {
-        return dataList.filter(item => {
+        let result = dataList.filter(item => {
             const query = searchQuery.toLowerCase();
             let matchesSearch = false;
             if (activeTab === 'faculty') {
@@ -191,6 +191,17 @@ const AdminPanel = () => {
             }
             return true;
         });
+
+        // Numeric Sorting for Rooms tab (digit order)
+        if (activeTab === 'rooms') {
+            result.sort((a, b) => {
+                const numA = parseInt(a.room_number, 10) || 0;
+                const numB = parseInt(b.room_number, 10) || 0;
+                return numA - numB;
+            });
+        }
+
+        return result;
     }, [dataList, searchQuery, activeTab, showPermanent, showGuest, showAdjunct, showClassrooms, showLabs, showTheory, showLabCourses]);
 
     const stats = useMemo(() => {
