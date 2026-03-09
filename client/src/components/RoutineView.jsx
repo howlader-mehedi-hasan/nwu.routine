@@ -13,7 +13,7 @@ import { useAuth } from '../contexts/AuthContext';
 
 const RoutineView = ({ overtimeVisibility, setOvertimeVisibility }) => {
     const { user } = useAuth();
-    const canEdit = user && ['Super Admin', 'Admin'].includes(user.role);
+    const canEdit = user && user.role === 'Super Admin';
     const [routine, setRoutine] = useState([]);
     const [metadata, setMetadata] = useState({ rooms: [], faculty: [], batches: [], courses: [] });
     const [loading, setLoading] = useState(true);

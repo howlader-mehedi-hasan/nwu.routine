@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
     createFaculty, updateFaculty, deleteFaculty, getFaculty,
     createCourse, updateCourse, deleteCourse, getCourses,
@@ -157,6 +157,71 @@ const AdminPanel = () => {
         setBatchForm(initialBatchForm);
     };
 
+    const filteredData = useMemo(() => {
+        return dataList.filter(item => {
+            const query = searchQuery.toLowerCase();
+            let matchesSearch = false;
+            if (activeTab === 'faculty') {
+                matchesSearch = String(item.name || '').toLowerCase().includes(query) ||
+                    String(item.initials || '').toLowerCase().includes(query) ||
+                    String(item.email || '').toLowerCase().includes(query);
+            } else if (activeTab === 'courses') {
+                matchesSearch = String(item.name || '').toLowerCase().includes(query) ||
+                    String(item.code || '').toLowerCase().includes(query);
+            } else if (activeTab === 'rooms') {
+                matchesSearch = String(item.room_number).toLowerCase().includes(query);
+            } else if (activeTab === 'batches') {
+                matchesSearch = String(item.name || '').toLowerCase().includes(query) ||
+                    String(item.section || '').toLowerCase().includes(query);
+            }
+            if (!matchesSearch) return false;
+
+            if (activeTab === 'faculty') {
+                if (item.type === 'Permanent' && !showPermanent) return false;
+                if (item.type === 'Guest' && !showGuest) return false;
+                if (item.type === 'Adjunct' && !showAdjunct) return false;
+            }
+            if (activeTab === 'rooms') {
+                if (item.type === 'Theory' && !showClassrooms) return false;
+                if (item.type === 'Lab' && !showLabs) return false;
+            }
+            if (activeTab === 'courses') {
+                if (item.type === 'Theory' && !showTheory) return false;
+                if (item.type === 'Lab' && !showLabCourses) return false;
+            }
+            return true;
+        });
+    }, [dataList, searchQuery, activeTab, showPermanent, showGuest, showAdjunct, showClassrooms, showLabs, showTheory, showLabCourses]);
+
+    const stats = useMemo(() => {
+        if (activeTab === 'faculty') {
+            return [
+                { label: 'Total Faculty', value: dataList.length, color: 'bg-indigo-500' },
+                { label: 'Permanent', value: dataList.filter(i => i.type === 'Permanent').length, color: 'bg-emerald-500' },
+                { label: 'Guest & Adjunct', value: dataList.filter(i => i.type === 'Guest' || i.type === 'Adjunct').length, color: 'bg-amber-500' },
+            ];
+        } else if (activeTab === 'courses') {
+            return [
+                { label: 'Total Courses', value: dataList.length, color: 'bg-indigo-500' },
+                { label: 'Theory Courses', value: dataList.filter(i => i.type === 'Theory').length, color: 'bg-purple-500' },
+                { label: 'Lab Courses', value: dataList.filter(i => i.type === 'Lab').length, color: 'bg-cyan-500' },
+            ];
+        } else if (activeTab === 'rooms') {
+            return [
+                { label: 'Total Rooms', value: dataList.length, color: 'bg-indigo-500' },
+                { label: 'Classrooms', value: dataList.filter(i => i.type === 'Theory').length, color: 'bg-rose-500' },
+                { label: 'Laboratories', value: dataList.filter(i => i.type === 'Lab').length, color: 'bg-blue-500' },
+            ];
+        } else if (activeTab === 'batches') {
+            const sections = new Set(dataList.map(i => i.section)).size;
+            return [
+                { label: 'Total Batches', value: dataList.length, color: 'bg-indigo-500' },
+                { label: 'Unique Sections', value: sections, color: 'bg-fuchsia-500' },
+            ];
+        }
+        return [];
+    }, [dataList, activeTab]);
+
     const tabs = [
         { id: 'faculty', label: 'Faculty', icon: <Users size={18} /> },
         { id: 'courses', label: 'Courses', icon: <BookOpen size={18} /> },
@@ -171,20 +236,40 @@ const AdminPanel = () => {
                 <p className="text-muted-foreground mt-1">Manage system data, schedule, and configurations.</p>
             </div>
 
+            {/* Insight Stats Cards */}
+            <div className="grid grid-cols-2 lg:grid-cols-3 gap-6">
+                {stats.map((stat, idx) => (
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ delay: idx * 0.05 }}
+                        key={idx}
+                        className="bg-card rounded-2xl border border-border/50 shadow-sm p-6 flex flex-col justify-center relative overflow-hidden group hover:shadow-md transition-shadow"
+                    >
+                        <div className={`absolute top-0 right-0 w-24 h-24 ${stat.color} opacity-[0.08] dark:opacity-10 rounded-bl-[100px] -z-0 transition-transform duration-500 group-hover:scale-125`}></div>
+                        <span className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-2 z-10">{stat.label}</span>
+                        <div className="flex items-center gap-3 z-10">
+                            <span className={`w-3 h-3 rounded-full ${stat.color} shadow-sm`}></span>
+                            <h3 className="text-3xl font-extrabold tracking-tight text-foreground">{stat.value}</h3>
+                        </div>
+                    </motion.div>
+                ))}
+            </div>
+
             <div className="flex flex-col gap-6">
                 {/* Horizontal Tab Selection */}
                 <div className="w-full">
-                    <div className="bg-card rounded-xl border border-border shadow-sm p-2 flex flex-row gap-2 overflow-x-auto">
+                    <div className="bg-muted/40 rounded-2xl border border-border/50 shadow-inner p-1.5 flex flex-row gap-1 overflow-x-auto w-fit">
                         {tabs.map((tab) => (
                             <button
                                 key={tab.id}
                                 onClick={() => setActiveTab(tab.id)}
-                                className={`flex items-center space-x-2 px-4 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap ${activeTab === tab.id
-                                    ? 'bg-indigo-50 text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-400 shadow-sm'
-                                    : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                                className={`flex items-center space-x-2 px-5 py-2.5 rounded-xl text-sm transition-all whitespace-nowrap ${activeTab === tab.id
+                                    ? 'bg-background text-foreground shadow-sm font-bold transform scale-[1.02] border-transparent'
+                                    : 'font-medium text-muted-foreground hover:bg-background/50 hover:text-foreground hover:border-border/50 border border-transparent'
                                     }`}
                             >
-                                {tab.icon}
+                                <span className={activeTab === tab.id ? "text-indigo-500" : ""}>{tab.icon}</span>
                                 <span>{tab.label}</span>
                             </button>
                         ))}
@@ -196,174 +281,171 @@ const AdminPanel = () => {
 
                     {/* Input Form Card */}
                     <motion.div
-                        initial={{ opacity: 0, y: 10 }}
+                        initial={{ opacity: 0, y: 15 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className="bg-card rounded-xl border border-border shadow-sm p-6"
+                        className="bg-card rounded-2xl border border-indigo-100 dark:border-indigo-950 shadow-md shadow-indigo-500/5 p-6 md:p-8 relative overflow-hidden"
                     >
-                        <div className="flex items-center justify-between mb-6">
-                            <h3 className="text-lg font-semibold flex items-center gap-2">
-                                {editingId ? <Edit size={18} className="text-indigo-500" /> : <Plus size={18} className="text-indigo-500" />}
-                                {editingId ? `Edit ${activeTab.slice(0, -1)}` : `Add New ${activeTab.slice(0, -1)}`}
-                            </h3>
-                            {editingId && (
-                                <Button variant="ghost" size="sm" onClick={cancelEdit} className="text-muted-foreground hover:text-foreground">
-                                    <X size={14} className="mr-1" /> Cancel
-                                </Button>
-                            )}
-                        </div>
+                        <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/5 rounded-bl-[100px] pointer-events-none"></div>
+                        <div className="relative z-10">
+                            <div className="flex items-center justify-between mb-6">
+                                <h3 className="text-lg font-semibold flex items-center gap-2">
+                                    {editingId ? <Edit size={18} className="text-indigo-500" /> : <Plus size={18} className="text-indigo-500" />}
+                                    {editingId ? `Edit ${activeTab.slice(0, -1)}` : `Add New ${activeTab.slice(0, -1)}`}
+                                </h3>
+                                {editingId && (
+                                    <Button variant="ghost" size="sm" onClick={cancelEdit} className="text-muted-foreground hover:text-foreground">
+                                        <X size={14} className="mr-1" /> Cancel
+                                    </Button>
+                                )}
+                            </div>
 
-                        <form onSubmit={handleSubmit} className="space-y-4">
-                            {activeTab === 'faculty' && (
-                                <div className="grid gap-4 md:grid-cols-2">
-                                    <FormField label="Full Name">
-                                        <Input value={facultyForm.name} onChange={e => setFacultyForm({ ...facultyForm, name: e.target.value })} placeholder="Dr. Name" required />
-                                    </FormField>
-                                    <FormField label="Initials (Short Form)">
-                                        <Input value={facultyForm.initials} onChange={e => setFacultyForm({ ...facultyForm, initials: e.target.value })} placeholder="DN" required />
-                                    </FormField>
-                                    <FormField label="Type">
-                                        <Select value={facultyForm.type} onChange={e => setFacultyForm({ ...facultyForm, type: e.target.value })}>
-                                            <option value="Permanent">Permanent</option>
-                                            <option value="Guest">Guest</option>
-                                            <option value="Adjunct">Adjunct</option>
-                                        </Select>
-                                    </FormField>
-                                    <FormField label="Designation">
-                                        <Select value={facultyForm.designation} onChange={e => setFacultyForm({ ...facultyForm, designation: e.target.value })}>
-                                            <option value="Head of the Department">Head of the Department</option>
-                                            <option value="Professor">Professor</option>
-                                            <option value="Associate Professor">Associate Professor</option>
-                                            <option value="Assistant Professor">Assistant Professor</option>
-                                            <option value="Senior Lecturer">Senior Lecturer</option>
-                                            <option value="Lecturer">Lecturer</option>
-                                            <option value="Junior Lecturer">Junior Lecturer</option>
-                                            <option value="Adjunct Faculty">Adjunct Faculty</option>
-                                        </Select>
-                                    </FormField>
-                                    <div className="md:col-span-2 grid gap-4 md:grid-cols-2">
-                                        <FormField label="Email">
-                                            <Input type="email" value={facultyForm.email} onChange={e => setFacultyForm({ ...facultyForm, email: e.target.value })} placeholder="email@example.com" required />
+                            <form onSubmit={handleSubmit} className="space-y-4">
+                                {activeTab === 'faculty' && (
+                                    <div className="grid gap-4 md:grid-cols-2">
+                                        <FormField label="Full Name">
+                                            <Input value={facultyForm.name} onChange={e => setFacultyForm({ ...facultyForm, name: e.target.value })} placeholder="Dr. Name" required />
                                         </FormField>
-                                        <FormField label="WhatsApp Number">
-                                            <Input type="tel" value={facultyForm.phone} onChange={e => setFacultyForm({ ...facultyForm, phone: e.target.value })} placeholder="+88017..." />
+                                        <FormField label="Initials (Short Form)">
+                                            <Input value={facultyForm.initials} onChange={e => setFacultyForm({ ...facultyForm, initials: e.target.value })} placeholder="DN" required />
                                         </FormField>
+                                        <FormField label="Type">
+                                            <Select value={facultyForm.type} onChange={e => setFacultyForm({ ...facultyForm, type: e.target.value })}>
+                                                <option value="Permanent">Permanent</option>
+                                                <option value="Guest">Guest</option>
+                                                <option value="Adjunct">Adjunct</option>
+                                            </Select>
+                                        </FormField>
+                                        <FormField label="Designation">
+                                            <Select value={facultyForm.designation} onChange={e => setFacultyForm({ ...facultyForm, designation: e.target.value })}>
+                                                <option value="Head of the Department">Head of the Department</option>
+                                                <option value="Professor">Professor</option>
+                                                <option value="Associate Professor">Associate Professor</option>
+                                                <option value="Assistant Professor">Assistant Professor</option>
+                                                <option value="Senior Lecturer">Senior Lecturer</option>
+                                                <option value="Lecturer">Lecturer</option>
+                                                <option value="Junior Lecturer">Junior Lecturer</option>
+                                                <option value="Adjunct Faculty">Adjunct Faculty</option>
+                                            </Select>
+                                        </FormField>
+                                        <div className="md:col-span-2 grid gap-4 md:grid-cols-2">
+                                            <FormField label="Email">
+                                                <Input type="email" value={facultyForm.email} onChange={e => setFacultyForm({ ...facultyForm, email: e.target.value })} placeholder="email@example.com" required />
+                                            </FormField>
+                                            <FormField label="WhatsApp Number">
+                                                <Input type="tel" value={facultyForm.phone} onChange={e => setFacultyForm({ ...facultyForm, phone: e.target.value })} placeholder="+88017..." />
+                                            </FormField>
+                                        </div>
                                     </div>
-                                </div>
-                            )}
+                                )}
 
-                            {activeTab === 'courses' && (
-                                <div className="grid gap-4 md:grid-cols-2">
-                                    <FormField label="Code">
-                                        <Input
-                                            value={courseForm.code}
-                                            onChange={e => {
-                                                const newCode = e.target.value;
-                                                // Auto-detect type based on last digit
-                                                // Extract numbers: CSE-1101 -> 1101
-                                                const numbers = newCode.replace(/\D/g, '');
-                                                let newType = courseForm.type;
-                                                if (numbers.length > 0) {
-                                                    const lastDigit = parseInt(numbers.slice(-1));
-                                                    newType = (lastDigit % 2 === 0) ? 'Lab' : 'Theory';
-                                                }
-                                                setCourseForm({ ...courseForm, code: newCode, type: newType });
-                                            }}
-                                            placeholder="CSE-1101"
-                                            required
-                                        />
-                                    </FormField>
-                                    <FormField label="Type">
-                                        <Select
-                                            value={courseForm.type}
-                                            onChange={e => setCourseForm({ ...courseForm, type: e.target.value })}
-                                        >
-                                            <option value="Theory">Theory</option>
-                                            <option value="Lab">Lab</option>
-                                        </Select>
-                                    </FormField>
-                                    <FormField label="Credits">
-                                        <Input type="number" step="0.5" value={courseForm.credit} onChange={e => setCourseForm({ ...courseForm, credit: Number(e.target.value) })} required />
-                                    </FormField>
-                                    <FormField label="Assigned Faculty ID">
-                                        <Input type="number" value={courseForm.assigned_faculty_id} onChange={e => setCourseForm({ ...courseForm, assigned_faculty_id: Number(e.target.value) })} required />
-                                    </FormField>
-                                    <div className="md:col-span-2">
-                                        <FormField label="Course Name">
-                                            <Input value={courseForm.name} onChange={e => setCourseForm({ ...courseForm, name: e.target.value })} placeholder="Course Name" required />
+                                {activeTab === 'courses' && (
+                                    <div className="grid gap-4 md:grid-cols-2">
+                                        <FormField label="Code">
+                                            <Input
+                                                value={courseForm.code}
+                                                onChange={e => {
+                                                    const newCode = e.target.value;
+                                                    // Auto-detect type based on last digit
+                                                    // Extract numbers: CSE-1101 -> 1101
+                                                    const numbers = newCode.replace(/\D/g, '');
+                                                    let newType = courseForm.type;
+                                                    if (numbers.length > 0) {
+                                                        const lastDigit = parseInt(numbers.slice(-1));
+                                                        newType = (lastDigit % 2 === 0) ? 'Lab' : 'Theory';
+                                                    }
+                                                    setCourseForm({ ...courseForm, code: newCode, type: newType });
+                                                }}
+                                                placeholder="CSE-1101"
+                                                required
+                                            />
                                         </FormField>
-                                    </div>
-                                </div>
-                            )}
-
-                            {activeTab === 'rooms' && (
-                                <div className="grid gap-4 md:grid-cols-2">
-                                    <FormField label="Room No">
-                                        <Input value={roomForm.room_number} onChange={e => setRoomForm({ ...roomForm, room_number: e.target.value })} placeholder="101" required />
-                                    </FormField>
-                                    <FormField label="Capacity">
-                                        <Input type="number" value={roomForm.capacity} onChange={e => setRoomForm({ ...roomForm, capacity: Number(e.target.value) })} required />
-                                    </FormField>
-                                    <FormField label="Floor">
-                                        <Input type="number" value={roomForm.floor} onChange={e => setRoomForm({ ...roomForm, floor: Number(e.target.value) })} required />
-                                    </FormField>
-                                    <FormField label="Type">
-                                        <Select
-                                            value={roomForm.type}
-                                            onChange={e => setRoomForm({ ...roomForm, type: e.target.value })}
-                                        >
-                                            <option value="Theory">Classroom</option>
-                                            <option value="Lab">Laboratory</option>
-                                        </Select>
-                                    </FormField>
-                                </div>
-                            )}
-
-                            {activeTab === 'batches' && (
-                                <div className="grid gap-4 md:grid-cols-2">
-                                    <div className="md:col-span-2 grid gap-4 md:grid-cols-2">
-                                        <FormField label="Batch Name">
-                                            <Input value={batchForm.name} onChange={e => setBatchForm({ ...batchForm, name: e.target.value })} placeholder="Batch-25" required />
-                                        </FormField>
-                                        <FormField label="Section">
-                                            <Input value={batchForm.section} onChange={e => setBatchForm({ ...batchForm, section: e.target.value })} placeholder="A" required />
-                                        </FormField>
-                                    </div>
-                                    <div className="md:col-span-2">
-                                        <FormField label="Default Room">
+                                        <FormField label="Type">
                                             <Select
-                                                value={batchForm.default_room_id}
-                                                onChange={e => setBatchForm({ ...batchForm, default_room_id: e.target.value })}
+                                                value={courseForm.type}
+                                                onChange={e => setCourseForm({ ...courseForm, type: e.target.value })}
                                             >
-                                                <option value="">Select Room</option>
-                                                {rooms.map(r => (
-                                                    <option key={r.id} value={r.id}>Room {r.room_number}</option>
-                                                ))}
+                                                <option value="Theory">Theory</option>
+                                                <option value="Lab">Lab</option>
+                                            </Select>
+                                        </FormField>
+                                        <FormField label="Credits">
+                                            <Input type="number" step="0.5" value={courseForm.credit} onChange={e => setCourseForm({ ...courseForm, credit: Number(e.target.value) })} required />
+                                        </FormField>
+                                        <FormField label="Assigned Faculty ID">
+                                            <Input type="number" value={courseForm.assigned_faculty_id} onChange={e => setCourseForm({ ...courseForm, assigned_faculty_id: Number(e.target.value) })} required />
+                                        </FormField>
+                                        <div className="md:col-span-2">
+                                            <FormField label="Course Name">
+                                                <Input value={courseForm.name} onChange={e => setCourseForm({ ...courseForm, name: e.target.value })} placeholder="Course Name" required />
+                                            </FormField>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {activeTab === 'rooms' && (
+                                    <div className="grid gap-4 md:grid-cols-2">
+                                        <FormField label="Room No">
+                                            <Input value={roomForm.room_number} onChange={e => setRoomForm({ ...roomForm, room_number: e.target.value })} placeholder="101" required />
+                                        </FormField>
+                                        <FormField label="Capacity">
+                                            <Input type="number" value={roomForm.capacity} onChange={e => setRoomForm({ ...roomForm, capacity: Number(e.target.value) })} required />
+                                        </FormField>
+                                        <FormField label="Floor">
+                                            <Input type="number" value={roomForm.floor} onChange={e => setRoomForm({ ...roomForm, floor: Number(e.target.value) })} required />
+                                        </FormField>
+                                        <FormField label="Type">
+                                            <Select
+                                                value={roomForm.type}
+                                                onChange={e => setRoomForm({ ...roomForm, type: e.target.value })}
+                                            >
+                                                <option value="Theory">Classroom</option>
+                                                <option value="Lab">Laboratory</option>
                                             </Select>
                                         </FormField>
                                     </div>
-                                </div>
-                            )}
+                                )}
 
-                            <div className="pt-2 flex justify-end">
-                                <Button type="submit" className="w-full md:w-auto">
-                                    <Save className="mr-2 h-4 w-4" />
-                                    {editingId ? "Update Record" : "Save Record"}
-                                </Button>
-                            </div>
-                        </form>
+                                {activeTab === 'batches' && (
+                                    <div className="grid gap-4 md:grid-cols-2">
+                                        <div className="md:col-span-2 grid gap-4 md:grid-cols-2">
+                                            <FormField label="Batch Name">
+                                                <Input value={batchForm.name} onChange={e => setBatchForm({ ...batchForm, name: e.target.value })} placeholder="Batch-25" required />
+                                            </FormField>
+                                            <FormField label="Section">
+                                                <Input value={batchForm.section} onChange={e => setBatchForm({ ...batchForm, section: e.target.value })} placeholder="A" required />
+                                            </FormField>
+                                        </div>
+                                        <div className="md:col-span-2">
+                                            <FormField label="Default Room">
+                                                <Select
+                                                    value={batchForm.default_room_id}
+                                                    onChange={e => setBatchForm({ ...batchForm, default_room_id: e.target.value })}
+                                                >
+                                                    <option value="">Select Room</option>
+                                                    {rooms.map(r => (
+                                                        <option key={r.id} value={r.id}>Room {r.room_number}</option>
+                                                    ))}
+                                                </Select>
+                                            </FormField>
+                                        </div>
+                                    </div>
+                                )}
+
+                                <div className="pt-4 flex justify-end border-t border-border mt-6">
+                                    <Button type="submit" className="w-full md:w-auto px-8 bg-indigo-600 hover:bg-indigo-700 text-white shadow-md hover:shadow-lg transition-all">
+                                        <Save className="mr-2 h-4 w-4" />
+                                        {editingId ? "Update Record" : "Save Record"}
+                                    </Button>
+                                </div>
+                            </form>
+                        </div>
                     </motion.div>
 
                     {/* Data List */}
                     <div className="space-y-4">
                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                             <h3 className="text-lg font-semibold text-foreground">
-                                Existing Records ({
-                                    activeTab === 'rooms'
-                                        ? dataList.filter(item => (item.type === 'Theory' && showClassrooms) || (item.type === 'Lab' && showLabs)).length
-                                        : activeTab === 'courses'
-                                            ? dataList.filter(item => (item.type === 'Theory' && showTheory) || (item.type === 'Lab' && showLabCourses)).length
-                                            : dataList.length
-                                })
+                                Existing Records ({filteredData.length})
                             </h3>
 
                             {/* Search Input */}
@@ -492,48 +574,14 @@ const AdminPanel = () => {
                         ) : (
                             <div className="grid gap-4 grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
                                 <AnimatePresence>
-                                    {dataList.filter(item => {
-                                        // 1. Filter by Search Query
-                                        const query = searchQuery.toLowerCase();
-                                        let matchesSearch = false;
-                                        if (activeTab === 'faculty') {
-                                            matchesSearch = String(item.name || '').toLowerCase().includes(query) ||
-                                                String(item.initials || '').toLowerCase().includes(query) ||
-                                                String(item.email || '').toLowerCase().includes(query);
-                                        } else if (activeTab === 'courses') {
-                                            matchesSearch = String(item.name || '').toLowerCase().includes(query) ||
-                                                String(item.code || '').toLowerCase().includes(query);
-                                        } else if (activeTab === 'rooms') {
-                                            matchesSearch = String(item.room_number).toLowerCase().includes(query);
-                                        } else if (activeTab === 'batches') {
-                                            matchesSearch = String(item.name || '').toLowerCase().includes(query) ||
-                                                String(item.section || '').toLowerCase().includes(query);
-                                        }
-                                        if (!matchesSearch) return false;
-
-                                        // 2. Filter by Tab-specific toggles
-                                        if (activeTab === 'faculty') {
-                                            if (item.type === 'Permanent' && !showPermanent) return false;
-                                            if (item.type === 'Guest' && !showGuest) return false;
-                                            if (item.type === 'Adjunct' && !showAdjunct) return false;
-                                        }
-                                        if (activeTab === 'rooms') {
-                                            if (item.type === 'Theory' && !showClassrooms) return false;
-                                            if (item.type === 'Lab' && !showLabs) return false;
-                                        }
-                                        if (activeTab === 'courses') {
-                                            if (item.type === 'Theory' && !showTheory) return false;
-                                            if (item.type === 'Lab' && !showLabCourses) return false;
-                                        }
-                                        return true;
-                                    }).map((item) => (
+                                    {filteredData.map((item) => (
                                         <motion.div
                                             key={item.id}
                                             layout
                                             initial={{ opacity: 0, scale: 0.95 }}
                                             animate={{ opacity: 1, scale: 1 }}
                                             exit={{ opacity: 0, scale: 0.95 }}
-                                            className={`bg-card p-4 rounded-xl border border-border shadow-sm flex flex-col justify-between group transition-all hover:border-indigo-500/30 ${editingId === item.id ? 'ring-2 ring-indigo-500' : ''}`}
+                                            className={`bg-card p-5 rounded-xl border border-border shadow-sm flex flex-col justify-between group transition-all duration-300 hover:shadow-md hover:-translate-y-1 hover:border-indigo-500/40 relative overflow-hidden ${editingId === item.id ? 'ring-2 ring-indigo-500 border-indigo-500/50' : ''}`}
                                         >
                                             <div className="space-y-1 mb-4">
                                                 {/* Dynamic Content Rendering */}

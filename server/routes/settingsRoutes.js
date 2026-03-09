@@ -4,6 +4,6 @@ const settingsController = require('../controllers/settingsController');
 const { protect, authorize } = require('../middleware/authMiddleware');
 
 router.get('/', settingsController.getSettings);
-router.put('/', protect, authorize('Super Admin', 'Admin'), settingsController.updateSettings);
+router.put('/', protect, authorize('Super Admin'), settingsController.updateSettings);
 
 module.exports = router;

@@ -87,3 +87,48 @@ exports.clearRoutine = (req, res) => {
         res.status(500).json({ message: 'Failed to clear routine', error: error.message });
     }
 };
+
+exports.exportRoutine = (req, res) => {
+    try {
+        const routine = dbRepository.getAll('routine_schedule');
+
+        // Define filename for download
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+        const filename = `routine_backup_${timestamp}.json`;
+
+        res.setHeader('Content-disposition', `attachment; filename=${filename}`);
+        res.setHeader('Content-type', 'application/json');
+        res.status(200).send(JSON.stringify(routine, null, 2));
+
+    } catch (error) {
+        console.error("Error exporting routine:", error.message);
+        res.status(500).json({ message: 'Failed to export routine', error: error.message });
+    }
+};
+
+exports.importRoutine = (req, res) => {
+    try {
+        const routineData = req.body;
+
+        if (!Array.isArray(routineData)) {
+            return res.status(400).json({ message: 'Invalid format. Expected an array of routine entries.' });
+        }
+
+        // Validate basic structure (optional but recommended)
+        const isValid = routineData.every(entry =>
+            entry.id && entry.day && entry.time && typeof entry.batch_id === 'number'
+        );
+
+        if (!isValid) {
+            return res.status(400).json({ message: 'Invalid data structure in backup file.' });
+        }
+
+        // Overwrite the collection
+        dbRepository._writeCollection('routine_schedule', routineData);
+        res.json({ message: 'Routine logic restored successfully.', count: routineData.length });
+
+    } catch (error) {
+        console.error("Error importing routine:", error.message);
+        res.status(500).json({ message: 'Failed to import routine', error: error.message });
+    }
+};

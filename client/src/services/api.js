@@ -4,6 +4,18 @@ const api = axios.create({
     baseURL: 'http://localhost:5001/api',
 });
 
+// Add a request interceptor to attach the token
+api.interceptors.request.use(
+    (config) => {
+        const token = localStorage.getItem('token');
+        if (token) {
+            config.headers.Authorization = `Bearer ${token}`;
+        }
+        return config;
+    },
+    (error) => Promise.reject(error)
+);
+
 export const getFaculty = () => api.get('/faculty');
 export const getCourses = () => api.get('/courses');
 export const getRooms = () => api.get('/rooms');
@@ -30,6 +42,8 @@ export const addRoutineEntry = (data) => api.post('/routine/add', data);
 export const updateRoutineEntry = (id, data) => api.put(`/routine/${id}`, data);
 export const deleteRoutineEntry = (id) => api.delete(`/routine/${id}`);
 export const clearRoutine = () => api.delete('/routine/clear');
+export const exportRoutine = () => api.get('/routine/export', { responseType: 'blob' });
+export const importRoutine = (data) => api.post('/routine/import', data);
 
 export const getSettings = () => api.get('/settings');
 export const updateSettings = (data) => api.put('/settings', data);

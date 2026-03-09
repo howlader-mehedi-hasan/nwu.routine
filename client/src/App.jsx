@@ -8,6 +8,7 @@ import FacultyList from './components/FacultyList';
 import AuthPage from './components/AuthPage';
 import UserManagement from './components/UserManagement';
 import UserDashboard from './components/UserDashboard';
+import SettingsLayout from './components/layout/SettingsLayout';
 import { ThemeProvider } from './components/ui/ThemeProvider';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { Toaster } from 'react-hot-toast';
@@ -43,19 +44,25 @@ function AppRoutes() {
 
       <Route path="/dashboard" element={
         <ProtectedRoute>
-          <DashboardLayout><UserDashboard /></DashboardLayout>
+          <DashboardLayout><SettingsLayout><UserDashboard /></SettingsLayout></DashboardLayout>
         </ProtectedRoute>
       } />
 
       <Route path="/admin" element={
         <ProtectedRoute allowedRoles={['Super Admin', 'Admin']}>
-          <DashboardLayout><AdminPanel /></DashboardLayout>
+          <DashboardLayout><SettingsLayout><AdminPanel /></SettingsLayout></DashboardLayout>
         </ProtectedRoute>
       } />
 
       <Route path="/users" element={
         <ProtectedRoute allowedRoles={['Super Admin']}>
-          <DashboardLayout><UserManagement /></DashboardLayout>
+          <DashboardLayout><SettingsLayout><UserManagement /></SettingsLayout></DashboardLayout>
+        </ProtectedRoute>
+      } />
+
+      <Route path="/settings" element={
+        <ProtectedRoute>
+          <DashboardLayout><SettingsLayout>&nbsp;</SettingsLayout></DashboardLayout>
         </ProtectedRoute>
       } />
     </Routes>

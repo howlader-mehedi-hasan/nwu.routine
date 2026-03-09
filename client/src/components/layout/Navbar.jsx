@@ -24,19 +24,21 @@ const Navbar = () => {
         { path: '/faculty', label: 'Faculty', icon: <Users size={18} /> },
     ];
 
+    let settingItems = [];
+
     // Home dashboard for all registered users
     if (user) {
-        menuItems.push({ path: '/dashboard', label: 'Dashboard', icon: <Shield size={18} /> });
+        settingItems.push({ path: '/dashboard', label: 'Dashboard', icon: <Shield size={18} /> });
     }
 
     // Admin panel only for specific roles
     if (user && ['Super Admin', 'Admin'].includes(user.role)) {
-        menuItems.push({ path: '/admin', label: 'Admin Panel', icon: <Database size={18} /> });
+        settingItems.push({ path: '/admin', label: 'Admin Panel', icon: <Database size={18} /> });
     }
 
     // User management only for Super Admin
     if (user && user.role === 'Super Admin') {
-        menuItems.push({ path: '/users', label: 'Users', icon: <Shield size={18} /> });
+        settingItems.push({ path: '/users', label: 'Users', icon: <Shield size={18} /> });
     }
 
     return (
@@ -87,6 +89,23 @@ const Navbar = () => {
                             </div>
                         )}
                         <div className="h-6 w-px bg-border mx-2 hidden md:block"></div>
+
+                        {settingItems.length > 0 && (
+                            <Link to="/settings" className="hidden md:block">
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className={cn(
+                                        "h-9 w-9 text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-all duration-200",
+                                        location.pathname.startsWith('/settings') && "bg-accent text-accent-foreground"
+                                    )}
+                                >
+                                    <Settings size={20} className="transition-transform" />
+                                    <span className="sr-only">Settings</span>
+                                </Button>
+                            </Link>
+                        )}
+
                         <ThemeToggle />
 
                         {user ? (
@@ -147,6 +166,24 @@ const Navbar = () => {
                                 </Link>
                             );
                         })}
+
+                        {settingItems.length > 0 && (
+                            <div className="pt-2 pb-1 border-t border-border/50 mt-2">
+                                <Link
+                                    to="/settings"
+                                    onClick={() => setIsOpen(false)}
+                                    className={cn(
+                                        "flex items-center space-x-3 px-3 py-2 rounded-md text-sm font-medium transition-colors",
+                                        location.pathname.startsWith('/settings')
+                                            ? 'bg-primary/10 text-primary dark:bg-primary/20'
+                                            : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
+                                    )}
+                                >
+                                    <Settings size={18} />
+                                    <span>Settings</span>
+                                </Link>
+                            </div>
+                        )}
 
                         {user ? (
                             <div className="border-t border-border/50 pt-2 mt-2">
