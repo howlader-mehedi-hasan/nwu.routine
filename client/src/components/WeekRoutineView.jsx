@@ -357,25 +357,53 @@ const WeekRoutineView = ({ overtimeVisibility, setOvertimeVisibility }) => {
 
     const downloadPDF = (pdfSettings) => {
         const doc = new jsPDF('l', 'mm', 'a3');
+        const pageWidth = doc.internal.pageSize.getWidth();
 
         // Apply Global Font Style
         doc.setFont(pdfSettings.fontStyle);
 
-        // Header Configuration
+        // --- Center Titles ---
+        // 1. University Name
         doc.setFontSize(pdfSettings.headerFontSize);
-        doc.text(pdfSettings.universityName || "Weekly Class Routine", 14, 15);
+        doc.setFont(pdfSettings.fontStyle, 'bold');
+        doc.text(pdfSettings.universityName || "North Western University", pageWidth / 2, 15, { align: "center" });
 
-        doc.setFontSize(Math.max(8, pdfSettings.headerFontSize - 4));
-        doc.text(pdfSettings.semesterName || `Generated: ${new Date().toLocaleDateString()}`, 14, 22);
+        // 2. Department Name (if we had it, fallback or hardcoded from user request)
+        // User requested: "university name, department name, semister name must allign at the middle"
+        doc.setFontSize(Math.max(10, pdfSettings.headerFontSize - 2));
+        doc.setFont(pdfSettings.fontStyle, 'normal');
+        doc.text(pdfSettings.departmentName || "Department of Computer Science and Engineering", pageWidth / 2, 22, { align: "center" });
 
+        // 3. Semester Name
+        doc.setFontSize(Math.max(10, pdfSettings.headerFontSize - 4));
+        doc.text(pdfSettings.semesterName || `Routine for Semester`, pageWidth / 2, 28, { align: "center" });
+
+
+        // --- Top Left Box: Updated Date ---
+        const today = new Date();
+        const formattedDate = `${String(today.getDate()).padStart(2, '0')}-${String(today.getMonth() + 1).padStart(2, '0')}-${today.getFullYear()}`;
+        const dateText = `Updated on : ${formattedDate}`;
+        doc.setFontSize(10);
+        const dateTextWidth = doc.getTextWidth(dateText);
+
+        // Draw rectangle
+        const leftBoxX = 14;
+        const topBoxY = 12;
+        const boxHeight = 8;
+        doc.rect(leftBoxX, topBoxY, dateTextWidth + 6, boxHeight);
+        doc.text(dateText, leftBoxX + 3, topBoxY + 5.5);
+
+        // --- Top Right Box: Additional Text (Optional) ---
         if (pdfSettings.additionalText) {
-            doc.setFontSize(Math.max(8, pdfSettings.headerFontSize - 6));
-            doc.text(pdfSettings.additionalText, 14, 28);
+            const rightTextWidth = doc.getTextWidth(pdfSettings.additionalText);
+            const rightBoxX = pageWidth - 14 - (rightTextWidth + 6);
+            doc.rect(rightBoxX, topBoxY, rightTextWidth + 6, boxHeight);
+            doc.text(pdfSettings.additionalText, rightBoxX + 3, topBoxY + 5.5);
         }
 
         autoTable(doc, {
             html: '#week-routine-table',
-            startY: pdfSettings.additionalText ? 32 : 28,
+            startY: 36,
             theme: 'grid',
             styles: {
                 font: pdfSettings.fontStyle,
@@ -383,89 +411,135 @@ const WeekRoutineView = ({ overtimeVisibility, setOvertimeVisibility }) => {
                 cellPadding: 1.5,
                 halign: 'center',
                 valign: 'middle',
-                textColor: [0, 0, 0] // enforce black text if dark mode CSS leaked
+                textColor: [0, 0, 0], // enforce black text if dark mode CSS leaked
+                lineWidth: 0.3, // 0.3mm for all standard borders
+                lineColor: [0, 0, 0] // Pure solid black
             },
             headStyles: {
-                fillColor: [79, 70, 229],
-                textColor: 255,
+                textColor: [0, 0, 0],
                 fontSize: pdfSettings.fontSize + 1,
-                fontStyle: 'bold'
+                fontStyle: 'bold',
+                fillColor: false
             },
-            columnStyles: { 0: { halign: 'left', fontStyle: 'bold', cellWidth: 25 } },
+            columnStyles: { 0: { halign: 'center', fontStyle: 'bold', cellWidth: 18 } },
             useCss: true, // Still parses rowspans/colspans
             didParseCell: function (data) {
                 // Force our custom font settings instead of whatever CSS was parsed from the DOM
                 data.cell.styles.font = pdfSettings.fontStyle;
+                // Force pure solid black borders and 0.3mm width (overrides DOM border colors)
+                data.cell.styles.lineColor = [0, 0, 0];
+                data.cell.styles.lineWidth = 0.3;
+
                 if (data.section === 'body' || data.section === 'foot') {
                     data.cell.styles.fontSize = pdfSettings.fontSize;
 
-                    // Format class cells in the body (excluding the first column which is Batch)
+                    // --- BATCH COLUMN (index 0) formatter ---
+                    if (data.section === 'body' && data.column.index === 0 && data.cell.text && data.cell.text.length > 0) {
+                        const batchRaw = data.cell.text.join(' ');
+                        const batchLines = [];
+
+                        // Helper: converts "1st", "2nd", "3rd", "4th" ordinal
+                        // Extract year ordinal: look for "#st/#nd/#rd/#th" before "Year"
+                        const yearMatch = batchRaw.match(/(\d+(?:st|nd|rd|th))\s+Year/i);
+                        if (yearMatch) batchLines.push(yearMatch[1] + '-Yr.');
+
+                        // Extract semester ordinal: look for "#st/#nd/#rd/#th" before "Sem"
+                        const semMatch = batchRaw.match(/(\d+(?:st|nd|rd|th))\s+Sem/i);
+                        if (semMatch) batchLines.push(semMatch[1] + '-Sm.');
+
+                        // Extract section: look for "Section X"
+                        const secMatch = batchRaw.match(/Section\s+([A-Z])/i);
+                        if (secMatch) batchLines.push('Sec.-' + secMatch[1].toUpperCase());
+
+                        // Extract room: look for "Room: X" or just a number at the end
+                        const roomMatch = batchRaw.match(/Room:\s*([\w\d]+)/i);
+                        if (roomMatch) batchLines.push('R.-' + roomMatch[1]);
+
+                        if (batchLines.length > 0) {
+                            data.cell.text = batchLines;
+                        }
+                    }
+
+                    // --- CLASS CELLS (columns > 0) formatter ---
                     if (data.section === 'body' && data.column.index > 0 && data.cell.text && data.cell.text.length > 0) {
-                        // The HTML parser might lump text together or separate it by elements.
-                        // Let's join everything, then try to extract the components.
                         const rawText = data.cell.text.join(' ');
+                        if (rawText.trim() === '') return;
 
-                        // 1. Discover all courses
-                        const courses = [...rawText.matchAll(/([a-zA-Z]+-\d+)/g)].map(m => m[0]);
+                        const hasAlt = rawText.includes('ALT');
+                        const cleanText = rawText.replace(/LAB/g, ' ').replace(/ALT/g, ' ').trim();
 
-                        if (courses.length > 0) {
-                            // 2. Discover all rooms
-                            let roomStrRaw = "";
-                            const roomMatch = rawText.match(/R-([a-zA-Z0-9]+(?:\s*\/\s*[a-zA-Z0-9]+)*)/);
-                            if (roomMatch) {
-                                roomStrRaw = roomMatch[0];
-                            }
-                            const rooms = roomMatch ? roomMatch[1].split('/').map(s => s.trim()) : [];
+                        // Extract all rooms: HTML renders as "R-301 / 305" (single R- prefix for all rooms)
+                        // So we match the full room sequence after R- and split by /
+                        const allRooms = [];
+                        const roomStartMatch = cleanText.match(/R-([\w\d]+(?:\s*\/\s*[\w\d]+)*)/)
+                        if (roomStartMatch) {
+                            roomStartMatch[1].split(/\s*\/\s*/).forEach(r => {
+                                if (r.trim()) allRooms.push(r.trim());
+                            });
+                        }
 
-                            // 3. Discover all faculties
-                            let remainingText = rawText;
-                            courses.forEach(c => { remainingText = remainingText.replace(c, ''); });
-                            if (roomStrRaw) { remainingText = remainingText.replace(roomStrRaw, ''); }
-                            remainingText = remainingText.replace(/\b(LAB|ALT)\b/g, '');
+                        // Remove rooms from text before extracting courses to prevent "R-301" from matching as a course
+                        const courseSearchText = cleanText.replace(/R-[\w\d]+/g, ' ');
 
-                            const faculties = remainingText.split('/').map(s => s.trim().replace(/^-|-$/g, '')).filter(s => s.length > 0);
+                        // Extract all course codes e.g. "CSE-1101 / CSE-1103" => ["CSE-1101", "CSE-1103"]
+                        const allCourses = [];
+                        const courseRegex = /([a-zA-Z]{2,})-(\d+)/g;
+                        let cm;
+                        while ((cm = courseRegex.exec(courseSearchText)) !== null) {
+                            allCourses.push({ prefix: cm[1], num: cm[2], full: cm[0] });
+                        }
 
-                            let newLines = [];
+                        // Extract faculty: remove courses + rooms from cleanText, split remaining words
+                        let facText = cleanText;
+                        allCourses.forEach(c => { facText = facText.replace(c.full, ' '); });
+                        facText = facText.replace(/R-[\w\d]+/g, ' ');
+                        const facWords = facText.split(/[\s/]+/).filter(w => w.trim().length > 0);
 
-                            if (courses.length > 1) {
-                                // Multiple courses in one box (i.e. ALT labs)
-                                for (let i = 0; i < courses.length; i++) {
-                                    newLines.push(courses[i]); // e.g. "CSE-1101"
+                        let newLines = [];
 
-                                    let fac = faculties[i] || faculties[0] || '';
-                                    let rm = rooms[i] || rooms[0] || '';
-                                    let facRoomLine = fac;
-                                    if (rm) facRoomLine += (fac ? '_' : '') + rm;
-                                    if (facRoomLine) newLines.push(facRoomLine); // e.g. "SPM_301"
+                        if (allCourses.length >= 2 && hasAlt) {
+                            // Dual alternate class format:
+                            // Line 1: CSE-1101
+                            // Line 2: SPM_301
+                            // Line 3: -alt-
+                            // Line 4: CSE-1103
+                            // Line 5: ANK_305
+                            const code1 = allCourses[0].full;
+                            const fac1 = facWords[0] || '';
+                            const room1 = allRooms[0] || '';
+                            const code2 = allCourses[1].full;
+                            const fac2 = facWords[1] || '';
+                            const room2 = allRooms[1] || '';
 
-                                    if (i < courses.length - 1) {
-                                        newLines.push('-alt-');
-                                    }
-                                }
-                            } else {
-                                // Single course formatting
-                                const courseMatch = courses[0].match(/([a-zA-Z]+)-(\d+)/);
-                                if (courseMatch) {
-                                    newLines.push(courseMatch[1] + '-'); // "CSE-"
-                                    newLines.push(courseMatch[2]);       // "1101"
-                                } else {
-                                    newLines.push(courses[0]);
-                                }
+                            newLines.push(code1);
+                            newLines.push(fac1 + (room1 ? '_' + room1 : ''));
+                            newLines.push('-alt-');
+                            newLines.push(code2);
+                            newLines.push(fac2 + (room2 ? '_' + room2 : ''));
+                        } else if (allCourses.length === 1) {
+                            // Single class format:
+                            // Line 1: CSE-
+                            // Line 2: 1101
+                            // Line 3: -FAC
+                            // Line 4: _301
+                            newLines.push(allCourses[0].prefix + '-');
+                            newLines.push(allCourses[0].num);
+                            if (facWords[0]) newLines.push('-' + facWords[0]);
+                            if (allRooms[0]) newLines.push('_' + allRooms[0]);
+                            if (hasAlt) newLines.push('-alt-');
+                        } else if (cleanText.trim()) {
+                            // Fallback: just show whatever text is there
+                            newLines = [cleanText.trim()];
+                        }
 
-                                let fac = faculties[0] || '';
-                                if (fac) newLines.push('-' + fac); // "-SPM"
-
-                                let rm = rooms[0] || '';
-                                if (rm) newLines.push('_' + rm); // "_301"
-                            }
-
-                            if (newLines.length > 0) {
-                                data.cell.text = newLines;
-                            }
+                        if (newLines.length > 0) {
+                            data.cell.text = newLines;
                         }
                     }
                 } else if (data.section === 'head') {
                     data.cell.styles.fontSize = pdfSettings.fontSize + 1;
+                    data.cell.styles.fillColor = false; // No background color
+                    data.cell.styles.textColor = [0, 0, 0]; // Black text
 
                     // Format time headers into two lines (e.g. "09:00 AM - 10:00 AM")
                     if (data.row.index === 1 && data.cell.text && data.cell.text.length > 0) {
@@ -474,6 +548,19 @@ const WeekRoutineView = ({ overtimeVisibility, setOvertimeVisibility }) => {
                             const [start, end] = cellText.split('-');
                             data.cell.text = [start.trim(), end.trim()];
                         }
+                    }
+                }
+
+                // Check for Day separation borders (indicated by className in HTML)
+                if (data.cell.raw && data.cell.raw.className && typeof data.cell.raw.className === 'string') {
+                    if (data.cell.raw.className.includes('border-r-4')) {
+                        // Apply 1mm border to the right side where the UI has the thick line
+                        data.cell.styles.lineWidth = {
+                            top: 0.3,
+                            bottom: 0.3,
+                            left: 0.3,
+                            right: 1.0
+                        };
                     }
                 }
             },
@@ -495,7 +582,11 @@ const WeekRoutineView = ({ overtimeVisibility, setOvertimeVisibility }) => {
             }
         }
 
-        doc.save(`weekly_routine_${new Date().getTime()}.pdf`);
+        const finalFileName = pdfSettings.fileName ?
+            (pdfSettings.fileName.endsWith('.pdf') ? pdfSettings.fileName : `${pdfSettings.fileName}.pdf`)
+            : `week_routine_${new Date().getTime()}.pdf`;
+
+        doc.save(finalFileName);
         toast.success('PDF downloaded!');
     };
 
@@ -509,14 +600,23 @@ const WeekRoutineView = ({ overtimeVisibility, setOvertimeVisibility }) => {
             const link = document.createElement('a');
             link.href = url;
 
-            // Extract filename from header if possible, else default
-            const contentDisposition = response.headers['content-disposition'];
-            let filename = 'routine_backup.json';
-            if (contentDisposition) {
-                const filenameMatch = contentDisposition.match(/filename="?(.+)"?/);
-                if (filenameMatch && filenameMatch.length === 2)
-                    filename = filenameMatch[1];
-            }
+            // Generate filename: routine_backup_dd-mm-yyyy_hh-mm-ss-tt_v1.json
+            const now = new Date();
+            const pad = (n) => String(n).padStart(2, '0');
+            const dd = pad(now.getDate());
+            const mm = pad(now.getMonth() + 1);
+            const yyyy = now.getFullYear();
+
+            let hours = now.getHours();
+            const tt = hours >= 12 ? 'pm' : 'am';
+            hours = hours % 12 || 12; // Convert to 12-hour format
+            const hh = pad(hours);
+            const min = pad(now.getMinutes());
+            const ss = pad(now.getSeconds());
+
+            const formattedDate = `${dd}-${mm}-${yyyy}`;
+            const formattedTime = `${hh}-${min}-${ss}-${tt}`;
+            let filename = `routine_backup_${formattedDate}_${formattedTime}_v1.json`;
 
             link.setAttribute('download', filename);
             document.body.appendChild(link);

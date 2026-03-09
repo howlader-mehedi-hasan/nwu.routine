@@ -69,3 +69,70 @@ The Python service should be stateless regarding the database.
 5.  **Migration Guide:** Add a comment section explaining exactly which files to modify when moving from `fs/json` to `supabase-js` client.
 
 Please generate the file structure, `package.json`, the `db.json` sample structure, the Node.js Repository Logic, and the Python Algorithm code.
+
+
+
+for downloaded weekview pdf
+if there are two alter class/lab course in same schedule
+then keep the text inside the box just like this formate bellow
+1st line containe 1st class course code(CSE-1101)
+2nd line conntain 1st class course teacher's short form and room number(SPM_301)
+3rd line contain "-alt-"
+4th line containe 2nd class course code(CSE-1103)
+5th line conntain 2nd class course teacher's short form and room number(ANK_305)
+
+
+for downloaded pdf
+for alter lab keep "-alt-" text inside the class box
+
+
+if there is a lab course there is a text "LAB" exectly showing after the room number wuithout spess
+dont show LAB
+
+
+there is a fault 
+room number is showing 2 times
+fix this
+only keep this format(_301)
+and dont need to mention LAB for lab schedule 
+
+
+in week view page
+on routine table
+for downloadable pdf
+class details shown in multiple line in each class box
+firstline containe the chars of course code(CSE-)
+second line shoun the digits of course code(1101)
+third line contain the short form of the faculty(-SPM)
+fourth line contain the room number if available(_301)
+
+
+when taking backups of routine from weekview page
+the download .json file will rname like this
+routine backup <backup time> <backup date> <number of routine data> .json
+
+
+no background color will apply for the first two row(day row and time slot row) of downloadable pdf
+
+
+
+header customization setting must need for downloadable pdf of week view
+the university name, department name, semister name must allign at the middle of the header, and the spacing between them will minimum.
+
+and the top left corner of the header contain the routine exported date(Updated on : dd-mm-yyyy) inside a ractangle box
+
+and the top right corner of the header contain the optional text inside a same sized ractangle box of the left
+
+for backup of the routine of the routine view
+the downloadable json file must be renamed like this formate(routine_backup_dd-mm-yyyy_hh-mm-ss-tt_number of routine data.json)
+
+wickly routine downloadable pdf rename must dynamic (can castomizable from pdf export setting)
+
+in downloaded pdf the table bordar of the routine must be more black and heigh contrast
+
+
+
+The downloaded PDF table borders have to restyle
+All borders are change to pure solid black.
+Standard cell borders must have a 0.3mm width.
+The vertical boundary lines that separate each Day have a thicker 1mm width (to perfectly match the UI layout where days are distinctly separated).
