@@ -454,7 +454,7 @@ export const generateWeeklyRoutinePDF = (pdfSettings, allFaculty = []) => {
         if (pdfSettings.signatureImage) {
             try {
                 // Determine a nice aspect ratio to fit within blockWidth, max height ~ 15
-                doc.addImage(pdfSettings.signatureImage, 'PNG', centerX - 20, headStartY - 15, 40, 15);
+                doc.addImage(pdfSettings.signatureImage, 'PNG', centerX - 30, headStartY - 30, 60, 30);
             } catch (e) {
                 console.error("Failed to render signature image:", e);
             }
@@ -532,28 +532,18 @@ export const generateWeeklyRoutinePDF = (pdfSettings, allFaculty = []) => {
         }
 
 
-        // Add 3-Point Footer (Left Text, Center Pagination, Right Text)
-        const pageCount = doc.internal.getNumberOfPages();
-        for (let i = 1; i <= pageCount; i++) {
-            doc.setPage(i);
-            doc.setFontSize(8);
-            doc.setFont("helvetica", "normal");
-
-            const footerY = doc.internal.pageSize.height - 10;
-            const pageWidth = doc.internal.pageSize.width;
-
-            // Bottom Left
-            if (pdfSettings.footerLeftText) {
-                doc.text(pdfSettings.footerLeftText, 14, footerY, { align: 'left' });
-            }
-
-            // Bottom Center (Pagination)
-            const pageText = `Page ${i} of ${pageCount}`;
-            doc.text(pageText, pageWidth / 2, footerY, { align: 'center' });
-
-            // Bottom Right
-            if (pdfSettings.footerRightText) {
-                doc.text(pdfSettings.footerRightText, pageWidth - 14, footerY, { align: 'right' });
+        // Add Footer Text if provided
+        if (pdfSettings.footerText) {
+            const pageCount = doc.internal.getNumberOfPages();
+            for (let i = 1; i <= pageCount; i++) {
+                doc.setPage(i);
+                doc.setFontSize(8);
+                doc.text(
+                    pdfSettings.footerText,
+                    doc.internal.pageSize.width / 2,
+                    doc.internal.pageSize.height - 10,
+                    { align: 'center' }
+                );
             }
         }
 
