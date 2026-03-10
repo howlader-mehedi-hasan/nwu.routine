@@ -532,18 +532,27 @@ export const generateWeeklyRoutinePDF = (pdfSettings, allFaculty = []) => {
         }
 
 
-        // Add Footer Text if provided
-        if (pdfSettings.footerText) {
-            const pageCount = doc.internal.getNumberOfPages();
-            for (let i = 1; i <= pageCount; i++) {
-                doc.setPage(i);
-                doc.setFontSize(8);
-                doc.text(
-                    pdfSettings.footerText,
-                    doc.internal.pageSize.width / 2,
-                    doc.internal.pageSize.height - 10,
-                    { align: 'center' }
-                );
+        // Add Footer Layout (Left, Center Pagination, Right)
+        const pageCount = doc.internal.getNumberOfPages();
+        for (let i = 1; i <= pageCount; i++) {
+            doc.setPage(i);
+            doc.setFontSize(8);
+            doc.setFont(pdfSettings.fontStyle || 'helvetica', 'normal');
+
+            const yPos = doc.internal.pageSize.height - 10;
+            const pageWidth = doc.internal.pageSize.width;
+
+            // Left Text
+            if (pdfSettings.footerLeftText) {
+                doc.text(pdfSettings.footerLeftText, 14, yPos, { align: 'left' });
+            }
+
+            // Center Pagination
+            doc.text(`Page ${i} of ${pageCount}`, pageWidth / 2, yPos, { align: 'center' });
+
+            // Right Text
+            if (pdfSettings.footerRightText) {
+                doc.text(pdfSettings.footerRightText, pageWidth - 14, yPos, { align: 'right' });
             }
         }
 
