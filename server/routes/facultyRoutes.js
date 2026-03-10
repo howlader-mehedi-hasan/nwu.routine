@@ -1,12 +1,12 @@
 const express = require('express');
 const router = express.Router();
 const facultyController = require('../controllers/facultyController');
-const { protect, authorize } = require('../middleware/authMiddleware');
+const { protect, requirePermission } = require('../middleware/authMiddleware');
 
 router.get('/', facultyController.getAll);
 router.get('/:id', facultyController.getById);
-router.post('/', protect, authorize('Super Admin', 'Admin'), facultyController.create);
-router.put('/:id', protect, authorize('Super Admin', 'Admin'), facultyController.update);
-router.delete('/:id', protect, authorize('Super Admin', 'Admin'), facultyController.delete);
+router.post('/', protect, requirePermission('manage_faculty'), facultyController.create);
+router.put('/:id', protect, requirePermission('manage_faculty'), facultyController.update);
+router.delete('/:id', protect, requirePermission('manage_faculty'), facultyController.delete);
 
 module.exports = router;

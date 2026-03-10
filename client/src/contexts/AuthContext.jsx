@@ -63,8 +63,21 @@ export const AuthProvider = ({ children }) => {
         localStorage.removeItem('token');
     };
 
+    const hasPermission = (permissionName) => {
+        if (!user) return false;
+        if (user.role === 'Super Admin' || user.role === 'Admin') return true;
+        return Array.isArray(user.permissions) && user.permissions.includes(permissionName);
+    };
+
+    const hasAnyPermission = (permissionsArray) => {
+        if (!user) return false;
+        if (user.role === 'Super Admin' || user.role === 'Admin') return true;
+        if (!Array.isArray(user.permissions)) return false;
+        return permissionsArray.some(p => user.permissions.includes(p));
+    };
+
     return (
-        <AuthContext.Provider value={{ user, token, loading, login, register, logout, api }}>
+        <AuthContext.Provider value={{ user, token, loading, login, register, logout, api, hasPermission, hasAnyPermission }}>
             {children}
         </AuthContext.Provider>
     );

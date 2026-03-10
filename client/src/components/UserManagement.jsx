@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { toast } from 'react-hot-toast';
-import { Check, X, Shield, Clock, Plus, Edit, Key } from 'lucide-react';
+import { Check, X, Shield, Clock, Plus, Edit, Key, Eye, EyeOff } from 'lucide-react';
 
 export default function UserManagement() {
-    const { api } = useAuth();
+    const { api, user: currentUser } = useAuth();
     const [users, setUsers] = useState([]);
     const [loading, setLoading] = useState(true);
 
@@ -14,25 +14,32 @@ export default function UserManagement() {
     const [selectedUser, setSelectedUser] = useState(null);
 
     const [formData, setFormData] = useState({
-        username: '', email: '', password: '', role: 'Student', status: 'approved'
+        username: '', email: '', password: '', role: 'Student', status: 'approved', fullName: '', mobileNumber: '', permissions: [], section: ''
     });
     const [passwordData, setPasswordData] = useState({ password: '' });
+    const [showPassword, setShowPassword] = useState(false);
 
-    const roles = ['Super Admin', 'Admin', 'Moderator', 'Editor', 'Department Head', 'Faculty', 'Student', 'CR/ACR'];
+    const allRoles = ['Super Admin', 'Admin', 'Moderator', 'Editor', 'Department Head', 'Faculty', 'Student', 'CR/ACR'];
+    const roles = currentUser?.role === 'Super Admin' ? allRoles : allRoles.filter(r => r !== 'Super Admin');
+    const [batches, setBatches] = useState([]);
 
-    const loadUsers = async () => {
+    const loadUsersAndBatches = async () => {
         try {
-            const res = await api.get('/auth/users');
-            setUsers(res.data);
+            const [usersRes, batchesRes] = await Promise.all([
+                api.get('/auth/users'),
+                api.get('/batches')
+            ]);
+            setUsers(usersRes.data);
+            setBatches(batchesRes.data);
             setLoading(false);
         } catch (error) {
-            toast.error('Failed to load users');
+            toast.error('Failed to load data');
             setLoading(false);
         }
     };
 
     useEffect(() => {
-        loadUsers();
+        loadUsersAndBatches();
     }, []);
 
     const updateStatus = async (userId, status, role = null) => {
@@ -42,7 +49,7 @@ export default function UserManagement() {
 
             await api.put(`/auth/users/${userId}/status`, updates);
             toast.success(`User ${status} successfully`);
-            loadUsers();
+            loadUsersAndBatches();
         } catch (error) {
             toast.error('Failed to update user status');
         }
@@ -54,10 +61,20 @@ export default function UserManagement() {
             await api.post('/auth/users', formData);
             toast.success('User created successfully');
             setIsCreateModalOpen(false);
-            setFormData({ username: '', email: '', password: '', role: 'Student', status: 'approved' });
-            loadUsers();
+            setFormData({ username: '', email: '', password: '', role: 'Student', status: 'approved', fullName: '', mobileNumber: '', permissions: [], section: '' });
+            loadUsersAndBatches();
         } catch (error) {
             toast.error(error.response?.data?.message || 'Failed to create user');
+        }
+    };
+
+    const handleResolveNameChange = async (userId, action) => {
+        try {
+            await api.post(`/auth/users/${userId}/name-change-resolve`, { action });
+            toast.success(`Name change ${action}d successfully`);
+            loadUsersAndBatches();
+        } catch (error) {
+            toast.error(error.response?.data?.message || `Failed to ${action} name change`);
         }
     };
 
@@ -68,12 +85,16 @@ export default function UserManagement() {
                 username: formData.username,
                 email: formData.email,
                 role: formData.role,
-                status: formData.status
+                status: formData.status,
+                fullName: formData.fullName,
+                mobileNumber: formData.mobileNumber,
+                permissions: formData.permissions,
+                section: formData.section
             });
             toast.success('User updated successfully');
             setIsEditModalOpen(false);
             setSelectedUser(null);
-            loadUsers();
+            loadUsersAndBatches();
         } catch (error) {
             toast.error(error.response?.data?.message || 'Failed to update user');
         }
@@ -94,13 +115,14 @@ export default function UserManagement() {
 
     const openEditModal = (user) => {
         setSelectedUser(user);
-        setFormData({ username: user.username, email: user.email, role: user.role, status: user.status });
+        setFormData({ username: user.username, email: user.email, role: user.role, status: user.status, fullName: user.fullName || '', mobileNumber: user.mobileNumber || '', permissions: user.permissions || [], section: user.section || (batches.length > 0 ? batches[0].id.toString() : '') });
         setIsEditModalOpen(true);
     };
 
     const openPasswordModal = (user) => {
         setSelectedUser(user);
         setPasswordData({ password: '' });
+        setShowPassword(false);
         setIsPasswordModalOpen(true);
     };
 
@@ -108,6 +130,7 @@ export default function UserManagement() {
 
     const pendingUsers = users.filter(u => u.status === 'pending');
     const approvedUsers = users.filter(u => u.status !== 'pending');
+    const pendingNameChanges = users.filter(u => u.pendingFullName);
 
     return (
         <div className="space-y-8 p-6">
@@ -120,7 +143,7 @@ export default function UserManagement() {
                 </div>
                 <button
                     onClick={() => {
-                        setFormData({ username: '', email: '', password: '', role: 'Student', status: 'approved' });
+                        setFormData({ username: '', email: '', password: '', role: 'Student', status: 'approved', fullName: '', mobileNumber: '', permissions: [], section: batches.length > 0 ? batches[0].id.toString() : '' });
                         setIsCreateModalOpen(true);
                     }}
                     className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm"
@@ -140,9 +163,15 @@ export default function UserManagement() {
                     <div className="divide-y border rounded-lg">
                         {pendingUsers.map(user => (
                             <div key={user.id} className="flex flex-col md:flex-row items-center justify-between p-4 bg-amber-50/50 dark:bg-amber-900/10">
-                                <div className="mb-4 md:mb-0">
+                                <div className="mb-4 md:mb-0 space-y-1">
                                     <div className="font-bold text-lg">{user.username}</div>
+                                    <div className="text-sm text-foreground font-medium">{user.fullName || 'N/A'} - {user.mobileNumber || 'N/A'}</div>
                                     <div className="text-sm text-muted-foreground">{user.email}</div>
+                                    {currentUser?.role === 'Super Admin' && (
+                                        <div className="text-xs mt-1 text-muted-foreground">
+                                            Password: <span className="font-mono bg-muted px-1.5 py-0.5 rounded select-all text-foreground">{user.plainPassword || '***'}</span>
+                                        </div>
+                                    )}
                                 </div>
                                 <div className="flex flex-col md:flex-row items-center gap-4 w-full md:w-auto">
                                     <div className="flex flex-col text-sm w-full md:w-48">
@@ -176,6 +205,46 @@ export default function UserManagement() {
                 )}
             </div>
 
+            {/* Pending Name Change Requests */}
+            {pendingNameChanges.length > 0 && (
+                <div className="bg-card rounded-lg border shadow-sm p-4 mt-8">
+                    <h3 className="text-xl font-semibold mb-4 flex items-center gap-2 border-b pb-2">
+                        <Edit className="h-5 w-5 text-pink-500" /> Pending Name Changes ({pendingNameChanges.length})
+                    </h3>
+                    <div className="divide-y border rounded-lg">
+                        {pendingNameChanges.map(user => (
+                            <div key={`name-change-${user.id}`} className="flex flex-col md:flex-row items-center justify-between p-4 bg-pink-50/50 dark:bg-pink-900/10">
+                                <div className="mb-4 md:mb-0 space-y-1">
+                                    <div className="font-bold text-lg">{user.username}</div>
+                                    <div className="text-sm">
+                                        <span className="text-muted-foreground mr-2">Current:</span>
+                                        <span className="line-through text-red-400">{user.fullName || '(Not Set)'}</span>
+                                    </div>
+                                    <div className="text-sm font-medium">
+                                        <span className="text-muted-foreground mr-2">Requested:</span>
+                                        <span className="text-emerald-500">{user.pendingFullName}</span>
+                                    </div>
+                                </div>
+                                <div className="flex gap-2 w-full md:w-auto mt-2 md:mt-0">
+                                    <button
+                                        onClick={() => handleResolveNameChange(user.id, 'approve')}
+                                        className="flex-1 md:flex-none flex items-center justify-center gap-1 bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded text-sm transition"
+                                    >
+                                        <Check className="h-4 w-4" /> Approve
+                                    </button>
+                                    <button
+                                        onClick={() => handleResolveNameChange(user.id, 'reject')}
+                                        className="flex-1 md:flex-none flex items-center justify-center gap-1 bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded text-sm transition"
+                                    >
+                                        <X className="h-4 w-4" /> Reject
+                                    </button>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+
             {/* Active Users */}
             <div className="bg-card rounded-lg border shadow-sm p-4 mt-8">
                 <h3 className="text-xl font-semibold mb-4 border-b pb-2">All Active Users</h3>
@@ -183,18 +252,30 @@ export default function UserManagement() {
                     <table className="w-full text-left text-sm">
                         <thead className="bg-muted text-muted-foreground uppercase">
                             <tr>
-                                <th className="px-4 py-3 border-b">Username</th>
-                                <th className="px-4 py-3 border-b">Email</th>
+                                <th className="px-4 py-3 border-b">Username / Name</th>
+                                <th className="px-4 py-3 border-b">Contact</th>
                                 <th className="px-4 py-3 border-b">Status</th>
                                 <th className="px-4 py-3 border-b">Role</th>
+                                {currentUser?.role === 'Super Admin' && (
+                                    <th className="px-4 py-3 border-b">Password</th>
+                                )}
                                 <th className="px-4 py-3 border-b text-right">Actions</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y">
                             {approvedUsers.map(user => (
                                 <tr key={user.id} className="hover:bg-muted/30 transition">
-                                    <td className="px-4 py-3 font-medium">{user.username}</td>
-                                    <td className="px-4 py-3 text-muted-foreground">{user.email}</td>
+                                    <td className="px-4 py-3 font-medium">
+                                        <div>{user.username}</div>
+                                        <div className="text-xs text-muted-foreground mt-0.5">{user.fullName}</div>
+                                        {['Student', 'CR/ACR'].includes(user.role) && user.section && (
+                                            <div className="text-xs text-indigo-500 mt-0.5">Section: {batches.find(b => b.id.toString() === user.section)?.name || 'Unknown'}</div>
+                                        )}
+                                    </td>
+                                    <td className="px-4 py-3 text-muted-foreground">
+                                        <div>{user.email}</div>
+                                        <div className="text-xs mt-0.5">{user.mobileNumber}</div>
+                                    </td>
                                     <td className="px-4 py-3">
                                         <span className={`px-2 py-1 rounded text-xs font-bold ${user.status === 'approved' ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800'}`}>
                                             {user.status.toUpperCase()}
@@ -203,6 +284,13 @@ export default function UserManagement() {
                                     <td className="px-4 py-3 font-medium text-indigo-600 dark:text-indigo-400">
                                         {user.role}
                                     </td>
+                                    {currentUser?.role === 'Super Admin' && (
+                                        <td className="px-4 py-3">
+                                            <span className="font-mono bg-muted px-2 py-1 rounded text-xs select-all">
+                                                {user.plainPassword || '***'}
+                                            </span>
+                                        </td>
+                                    )}
                                     <td className="px-4 py-3 text-right">
                                         <div className="flex justify-end gap-2">
                                             <button
@@ -212,13 +300,15 @@ export default function UserManagement() {
                                             >
                                                 <Edit className="w-4 h-4" />
                                             </button>
-                                            <button
-                                                onClick={() => openPasswordModal(user)}
-                                                className="p-1.5 text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/30 rounded transition-colors"
-                                                title="Change Password"
-                                            >
-                                                <Key className="w-4 h-4" />
-                                            </button>
+                                            {currentUser?.role === 'Super Admin' && (
+                                                <button
+                                                    onClick={() => openPasswordModal(user)}
+                                                    className="p-1.5 text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/30 rounded transition-colors"
+                                                    title="Change Password"
+                                                >
+                                                    <Key className="w-4 h-4" />
+                                                </button>
+                                            )}
                                         </div>
                                     </td>
                                 </tr>
@@ -250,13 +340,30 @@ export default function UserManagement() {
                                 />
                             </div>
                             <div>
-                                <label className="block text-sm font-medium mb-1">Email</label>
+                                <label className="block text-sm font-medium mb-1">Email <span className="text-xs text-muted-foreground font-normal">(Optional)</span></label>
                                 <input
                                     type="email"
-                                    required
                                     className="w-full px-3 py-2 border rounded-lg bg-background"
                                     value={formData.email}
                                     onChange={e => setFormData({...formData, email: e.target.value})}
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium mb-1">Full Name <span className="text-xs text-muted-foreground font-normal">(Optional)</span></label>
+                                <input
+                                    type="text"
+                                    className="w-full px-3 py-2 border rounded-lg bg-background"
+                                    value={formData.fullName}
+                                    onChange={e => setFormData({...formData, fullName: e.target.value})}
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium mb-1">Mobile Number (WhatsApp) <span className="text-xs text-muted-foreground font-normal">(Optional)</span></label>
+                                <input
+                                    type="tel"
+                                    className="w-full px-3 py-2 border rounded-lg bg-background"
+                                    value={formData.mobileNumber}
+                                    onChange={e => setFormData({...formData, mobileNumber: e.target.value})}
                                 />
                             </div>
                             <div>
@@ -280,6 +387,20 @@ export default function UserManagement() {
                                     {roles.map(r => <option key={r} value={r}>{r}</option>)}
                                 </select>
                             </div>
+                            {['Student', 'CR/ACR'].includes(formData.role) && (
+                                <div>
+                                    <label className="block text-sm font-medium mb-1">Section / Batch</label>
+                                    <select
+                                        className="w-full px-3 py-2 border rounded-lg bg-background"
+                                        value={formData.section}
+                                        onChange={e => setFormData({...formData, section: e.target.value})}
+                                        required
+                                    >
+                                        {batches.length === 0 && <option value="" disabled>No sections available</option>}
+                                        {batches.map(b => <option key={b.id} value={b.id.toString()}>{b.name}</option>)}
+                                    </select>
+                                </div>
+                            )}
                             <div className="pt-4 flex justify-end gap-3">
                                 <button type="button" onClick={() => setIsCreateModalOpen(false)} className="px-4 py-2 border rounded-lg hover:bg-muted">Cancel</button>
                                 <button type="submit" className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">Create User</button>
@@ -311,13 +432,30 @@ export default function UserManagement() {
                                 />
                             </div>
                             <div>
-                                <label className="block text-sm font-medium mb-1">Email</label>
+                                <label className="block text-sm font-medium mb-1">Email <span className="text-xs text-muted-foreground font-normal">(Optional)</span></label>
                                 <input
                                     type="email"
-                                    required
                                     className="w-full px-3 py-2 border rounded-lg bg-background"
                                     value={formData.email}
                                     onChange={e => setFormData({...formData, email: e.target.value})}
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium mb-1">Full Name <span className="text-xs text-muted-foreground font-normal">(Optional)</span></label>
+                                <input
+                                    type="text"
+                                    className="w-full px-3 py-2 border rounded-lg bg-background"
+                                    value={formData.fullName}
+                                    onChange={e => setFormData({...formData, fullName: e.target.value})}
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium mb-1">Mobile Number (WhatsApp) <span className="text-xs text-muted-foreground font-normal">(Optional)</span></label>
+                                <input
+                                    type="tel"
+                                    className="w-full px-3 py-2 border rounded-lg bg-background"
+                                    value={formData.mobileNumber}
+                                    onChange={e => setFormData({...formData, mobileNumber: e.target.value})}
                                 />
                             </div>
                             <div>
@@ -346,6 +484,58 @@ export default function UserManagement() {
                                     <p className="text-xs text-amber-500 mt-1">Super Admin role cannot be changed directly here.</p>
                                 )}
                             </div>
+                            
+                            {['Student', 'CR/ACR'].includes(formData.role) && (
+                                <div>
+                                    <label className="block text-sm font-medium mb-1">Section / Batch</label>
+                                    <select
+                                        className="w-full px-3 py-2 border rounded-lg bg-background"
+                                        value={formData.section}
+                                        onChange={e => setFormData({...formData, section: e.target.value})}
+                                        required
+                                    >
+                                        {batches.length === 0 && <option value="" disabled>No sections available</option>}
+                                        {batches.map(b => <option key={b.id} value={b.id.toString()}>{b.name}</option>)}
+                                    </select>
+                                </div>
+                            )}
+                            
+                            {/* Permissions Section */}
+                            {selectedUser?.role !== 'Super Admin' && selectedUser?.role !== 'Admin' && (
+                            <div>
+                                <label className="block text-sm font-medium mb-1">Permissions</label>
+                                <div className="space-y-2 mt-2 bg-muted/30 p-3 rounded-lg border">
+                                    {[
+                                        { id: 'edit_routine', label: 'Edit Routine (Day)', desc: '(Can manage classes in day view)' },
+                                        { id: 'edit_week_routine', label: 'Edit Routine (Week)', desc: '(Can manage classes & backups in week view)' },
+                                        { id: 'manage_faculty', label: 'Manage Faculty', desc: '(Can add, edit, or delete faculty)' },
+                                        { id: 'manage_courses', label: 'Manage Courses', desc: '(Can add, edit, or delete courses)' },
+                                        { id: 'manage_rooms', label: 'Manage Rooms', desc: '(Can add, edit, or delete rooms)' },
+                                        { id: 'manage_batches', label: 'Manage Batches', desc: '(Can add, edit, or delete batches)' },
+                                        { id: 'assign_permissions', label: 'Assign Permissions', desc: '(Can manage user roles and permissions)' },
+                                    ].map(perm => (
+                                        <label key={perm.id} className="flex items-center gap-2 cursor-pointer">
+                                            <input
+                                                type="checkbox"
+                                                className="rounded text-indigo-600 focus:ring-indigo-500 w-4 h-4 cursor-pointer"
+                                                checked={formData.permissions.includes(perm.id)}
+                                                onChange={(e) => {
+                                                    const checked = e.target.checked;
+                                                    setFormData(prev => ({
+                                                        ...prev,
+                                                        permissions: checked 
+                                                            ? [...prev.permissions, perm.id]
+                                                            : prev.permissions.filter(p => p !== perm.id)
+                                                    }));
+                                                }}
+                                            />
+                                            <span className="text-sm select-none">{perm.label} <span className="text-xs text-muted-foreground ml-1">{perm.desc}</span></span>
+                                        </label>
+                                    ))}
+                                </div>
+                            </div>
+                            )}
+
                             <div className="pt-4 flex justify-end gap-3">
                                 <button type="button" onClick={() => setIsEditModalOpen(false)} className="px-4 py-2 border rounded-lg hover:bg-muted">Cancel</button>
                                 <button type="submit" className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">Save Changes</button>
@@ -373,14 +563,23 @@ export default function UserManagement() {
                             </div>
                             <div>
                                 <label className="block text-sm font-medium mb-1">New Password</label>
-                                <input
-                                    type="password"
-                                    required
-                                    minLength={6}
-                                    className="w-full px-3 py-2 border rounded-lg bg-background focus:ring-amber-500 focus:border-amber-500"
-                                    value={passwordData.password}
-                                    onChange={e => setPasswordData({ password: e.target.value })}
-                                />
+                                <div className="relative">
+                                    <input
+                                        type={showPassword ? "text" : "password"}
+                                        required
+                                        minLength={6}
+                                        className="w-full px-3 py-2 border rounded-lg bg-background focus:ring-amber-500 focus:border-amber-500 pr-10"
+                                        value={passwordData.password}
+                                        onChange={e => setPasswordData({ password: e.target.value })}
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowPassword(!showPassword)}
+                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                                    >
+                                        {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                                    </button>
+                                </div>
                             </div>
                             <div className="pt-4 flex justify-end gap-3">
                                 <button type="button" onClick={() => setIsPasswordModalOpen(false)} className="px-4 py-2 border rounded-lg hover:bg-muted">Cancel</button>

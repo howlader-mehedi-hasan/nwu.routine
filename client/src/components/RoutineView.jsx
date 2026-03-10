@@ -12,8 +12,8 @@ import SettingsModal from './SettingsModal';
 import { useAuth } from '../contexts/AuthContext';
 
 const RoutineView = ({ overtimeVisibility, setOvertimeVisibility }) => {
-    const { user } = useAuth();
-    const canEdit = user && user.role === 'Super Admin';
+    const { user, hasPermission } = useAuth();
+    const canEdit = hasPermission('edit_routine');
     const [routine, setRoutine] = useState([]);
     const [metadata, setMetadata] = useState({ rooms: [], faculty: [], batches: [], courses: [] });
     const [loading, setLoading] = useState(true);

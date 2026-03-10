@@ -1,15 +1,60 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
+import { getSettings } from '../services/api';
+import axios from 'axios';
 
 export default function AuthPage() {
     const [isLogin, setIsLogin] = useState(true);
-    const [formData, setFormData] = useState({ username: '', email: '', password: '', role: 'Student' });
-    const { login, register } = useAuth();
+    const [formData, setFormData] = useState({ 
+        username: '', 
+        email: '', 
+        password: '', 
+        role: 'Student',
+        fullName: '',
+        mobileNumber: '',
+        section: ''
+    });
+    const { login, register, api } = useAuth();
     const navigate = useNavigate();
 
-    const roles = ['Super Admin', 'Admin', 'Moderator', 'Editor', 'Department Head', 'Faculty', 'Student', 'CR/ACR'];
+    const allRoles = ['Super Admin', 'Admin', 'Moderator', 'Editor', 'Department Head', 'Faculty', 'Student', 'CR/ACR'];
+    const [allowedRoles, setAllowedRoles] = useState(['Student', 'Faculty', 'CR/ACR']);
+    const [batches, setBatches] = useState([]);
+
+    useEffect(() => {
+        const fetchRolesAndBatches = async () => {
+            try {
+                // Fetch Settings (Roles)
+                const res = await getSettings();
+                const settingsRoles = res.data?.data?.general?.registration_roles;
+                if (settingsRoles && Array.isArray(settingsRoles) && settingsRoles.length > 0) {
+                    setAllowedRoles(settingsRoles);
+                    if (!settingsRoles.includes(formData.role)) {
+                        setFormData(prev => ({ ...prev, role: settingsRoles[0] }));
+                    }
+                }
+            } catch (err) {
+                console.error("Failed to load registration settings", err);
+            }
+
+            try {
+                // Determine base URL since we aren't logged in yet, we can't fully rely on the protected api wrapper
+                const baseURL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+                const batchRes = await axios.get(`${baseURL}/batches`);
+                if (batchRes.data && Array.isArray(batchRes.data)) {
+                    setBatches(batchRes.data);
+                    if (batchRes.data.length > 0 && !formData.section) {
+                       setFormData(prev => ({ ...prev, section: batchRes.data[0].id.toString() }));
+                    }
+                }
+            } catch (err) {
+                 console.error("Failed to load sections/batches", err);
+            }
+        };
+        fetchRolesAndBatches();
+    }, []);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -59,6 +104,26 @@ export default function AuthPage() {
                         {!isLogin && (
                             <>
                                 <div>
+                                    <label className="text-sm font-medium">Full Name</label>
+                                    <input
+                                        type="text"
+                                        required
+                                        className="w-full px-3 py-2 border rounded-md"
+                                        value={formData.fullName}
+                                        onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
+                                    />
+                                </div>
+                                <div>
+                                    <label className="text-sm font-medium">Mobile Number (WhatsApp)</label>
+                                    <input
+                                        type="tel"
+                                        required
+                                        className="w-full px-3 py-2 border rounded-md"
+                                        value={formData.mobileNumber}
+                                        onChange={(e) => setFormData({ ...formData, mobileNumber: e.target.value })}
+                                    />
+                                </div>
+                                <div>
                                     <label className="text-sm font-medium">Email Address</label>
                                     <input
                                         type="email"
@@ -75,9 +140,23 @@ export default function AuthPage() {
                                         value={formData.role}
                                         onChange={(e) => setFormData({ ...formData, role: e.target.value })}
                                     >
-                                        {roles.map(r => <option key={r} value={r}>{r}</option>)}
+                                        {allowedRoles.map(r => <option key={r} value={r}>{r}</option>)}
                                     </select>
                                 </div>
+                                {['Student', 'CR/ACR'].includes(formData.role) && (
+                                    <div>
+                                        <label className="text-sm font-medium">Section / Batch</label>
+                                        <select
+                                            className="w-full px-3 py-2 border rounded-md bg-transparent"
+                                            value={formData.section}
+                                            onChange={(e) => setFormData({ ...formData, section: e.target.value })}
+                                            required
+                                        >
+                                            {batches.length === 0 && <option value="" disabled>No sections available</option>}
+                                            {batches.map(b => <option key={b.id} value={b.id.toString()}>{b.name}</option>)}
+                                        </select>
+                                    </div>
+                                )}
                             </>
                         )}
 

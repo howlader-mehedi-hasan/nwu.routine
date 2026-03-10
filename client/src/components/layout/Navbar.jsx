@@ -10,7 +10,7 @@ const Navbar = () => {
     const location = useLocation();
     const navigate = useNavigate();
     const [isOpen, setIsOpen] = useState(false);
-    const { user, logout } = useAuth();
+    const { user, logout, hasPermission, hasAnyPermission } = useAuth();
 
     const handleLogout = () => {
         logout();
@@ -32,12 +32,12 @@ const Navbar = () => {
     }
 
     // Admin panel only for specific roles
-    if (user && ['Super Admin', 'Admin'].includes(user.role)) {
+    if (user && hasAnyPermission(['manage_faculty', 'manage_courses', 'manage_rooms', 'manage_batches'])) {
         settingItems.push({ path: '/admin', label: 'Admin Panel', icon: <Database size={18} /> });
     }
 
-    // User management only for Super Admin
-    if (user && user.role === 'Super Admin') {
+    // User management only for Super Admin or those with permission
+    if (user && hasPermission('assign_permissions')) {
         settingItems.push({ path: '/users', label: 'Users', icon: <Shield size={18} /> });
     }
 
@@ -84,8 +84,7 @@ const Navbar = () => {
                     <div className="flex items-center space-x-2">
                         {user && (
                             <div className="hidden md:flex items-center space-x-1 text-xs text-muted-foreground mr-2 bg-muted px-2 py-1 rounded border border-border/50">
-                                <span className="font-bold text-indigo-500">{user.username}</span>
-                                <span className="text-[10px] uppercase">({user.role})</span>
+                                <span className="font-bold text-indigo-500">{user.fullName || user.username}</span>
                             </div>
                         )}
                         <div className="h-6 w-px bg-border mx-2 hidden md:block"></div>
@@ -188,7 +187,7 @@ const Navbar = () => {
                         {user ? (
                             <div className="border-t border-border/50 pt-2 mt-2">
                                 <div className="flex items-center justify-between px-3 py-2 text-sm">
-                                    <span className="font-bold text-indigo-500">{user.username} <span className="text-[10px] uppercase text-muted-foreground">({user.role})</span></span>
+                                    <span className="font-bold text-indigo-500">{user.fullName || user.username}</span>
                                     <Button variant="ghost" size="sm" onClick={handleLogout} className="text-red-500 flex items-center gap-2">
                                         <LogOut size={16} /> Logout
                                     </Button>

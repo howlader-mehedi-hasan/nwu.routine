@@ -11,9 +11,20 @@ import { Select } from './ui/Select';
 import toast from 'react-hot-toast';
 import { Users, BookOpen, MapPin, Layers, Save, Edit, Trash2, Copy, X, Plus, Search } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useAuth } from '../contexts/AuthContext';
 
 const AdminPanel = () => {
-    const [activeTab, setActiveTab] = useState('faculty');
+    const { hasPermission } = useAuth();
+
+    const availableTabs = [
+        { id: 'faculty', label: 'Faculty', icon: <Users size={18} />, perm: 'manage_faculty' },
+        { id: 'courses', label: 'Courses', icon: <BookOpen size={18} />, perm: 'manage_courses' },
+        { id: 'rooms', label: 'Rooms', icon: <MapPin size={18} />, perm: 'manage_rooms' },
+        { id: 'batches', label: 'Batches', icon: <Layers size={18} />, perm: 'manage_batches' },
+    ];
+    const tabs = availableTabs.filter(tab => hasPermission(tab.perm));
+
+    const [activeTab, setActiveTab] = useState(tabs.length > 0 ? tabs[0].id : '');
     const [dataList, setDataList] = useState([]);
     const [rooms, setRooms] = useState([]); // For dropdowns
     const [isLoading, setIsLoading] = useState(false);
@@ -233,12 +244,7 @@ const AdminPanel = () => {
         return [];
     }, [dataList, activeTab]);
 
-    const tabs = [
-        { id: 'faculty', label: 'Faculty', icon: <Users size={18} /> },
-        { id: 'courses', label: 'Courses', icon: <BookOpen size={18} /> },
-        { id: 'rooms', label: 'Rooms', icon: <MapPin size={18} /> },
-        { id: 'batches', label: 'Batches', icon: <Layers size={18} /> },
-    ];
+    // Tabs are now defined dynamically above
 
     return (
         <div className="w-full px-6 mx-auto space-y-8 animate-in fade-in duration-500">

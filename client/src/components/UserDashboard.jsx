@@ -1,17 +1,17 @@
 import React from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { Link } from 'react-router-dom';
-import { Shield, BookOpen, Clock, Settings, Users, Database } from 'lucide-react';
+import { Shield, BookOpen, Database, Users } from 'lucide-react';
 
 export default function UserDashboard() {
-    const { user } = useAuth();
+    const { user, hasPermission } = useAuth();
 
     if (!user) {
         return <div>Loading...</div>; // Rendered via protected route anyway
     }
 
     const isAdmin = ['Super Admin', 'Admin'].includes(user.role);
-    const isSuperAdmin = user.role === 'Super Admin';
+    const canManageUsers = hasPermission('assign_permissions');
 
     return (
         <div className="space-y-8 max-w-5xl mx-auto p-4 md:p-8">
@@ -20,7 +20,7 @@ export default function UserDashboard() {
                 <div className="bg-gradient-to-r from-indigo-500/20 to-purple-500/20 p-8 border-b border-border">
                     <h2 className="text-3xl font-bold tracking-tight text-foreground flex items-center gap-3">
                         <Shield className="h-8 w-8 text-indigo-500" />
-                        Welcome back, {user.username}!
+                        Welcome back, {user.fullName || user.username}!
                     </h2>
                     <p className="text-muted-foreground mt-2 max-w-2xl">
                         This is your personal dashboard. Manage your account, access quick links, and view your system permissions below.
@@ -86,8 +86,8 @@ export default function UserDashboard() {
                     </Link>
                 )}
 
-                {/* Only Super Admins get this card */}
-                {isSuperAdmin && (
+                {/* Only users with permission get this card */}
+                {canManageUsers && (
                     <Link to="/users" className="group block focus:outline-none focus:ring-2 focus:ring-emerald-500 rounded-xl">
                         <div className="bg-emerald-50/30 dark:bg-emerald-950/20 hover:bg-emerald-50 dark:hover:bg-emerald-900/40 transition-colors border border-emerald-200 dark:border-emerald-800 rounded-xl p-6 h-full flex flex-col items-start gap-4 shadow-sm hover:shadow-md relative overflow-hidden">
                             <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-emerald-400/20 to-teal-500/20 rounded-bl-full -z-10 blur-xl"></div>

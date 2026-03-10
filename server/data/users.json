@@ -6,16 +6,29 @@
     "password": "$2b$10$YsAq5LGEpYK2rk0kgO4ZKu4Fb59ic22vxj5Bh4W0skAPNNwbe.S9C",
     "role": "Super Admin",
     "status": "approved",
-    "permissions": []
+    "permissions": [],
+    "fullName": "Howlader Mehedi Hasan",
+    "mobileNumber": "01648292385",
+    "pendingFullName": null
   },
   {
     "id": "1771856072586",
     "username": "js",
     "email": "jasiasultana21@gmail.com",
     "password": "$2b$10$AEJJLhA8fQ3OhM0V3khxWutHsODw.0xgjthb6TOqDNgBRepvstqM.",
-    "role": "Student",
+    "role": "Admin",
     "status": "approved",
-    "permissions": []
+    "permissions": [
+      "assign_permissions",
+      "edit_routine",
+      "edit_week_routine",
+      "manage_faculty",
+      "manage_courses",
+      "manage_rooms",
+      "manage_batches"
+    ],
+    "fullName": "",
+    "mobileNumber": ""
   },
   {
     "id": "1772049728687",
@@ -52,5 +65,43 @@
     "role": "Student",
     "status": "approved",
     "permissions": []
+  },
+  {
+    "id": "1773173177671",
+    "username": "mahedi",
+    "email": "mahedi@cse",
+    "password": "$2b$10$SKOSu210ykFkL2ot3O6nyud0xVJ..kLhdeCmEwn4tQLeiWuriNsve",
+    "role": "Department Head",
+    "status": "approved",
+    "permissions": [],
+    "fullName": "Md. Mahedi Hasan",
+    "mobileNumber": "01714615916"
+  },
+  {
+    "id": "1773175493701",
+    "username": "a",
+    "email": "a@c",
+    "password": "$2b$10$WwsJc4DmbbER95JFKZudkuEr8MesdgdSHnO3eQSG8FMpGq1twea6e",
+    "role": "Admin",
+    "status": "approved",
+    "permissions": [
+      "assign_permissions"
+    ],
+    "fullName": "",
+    "mobileNumber": "",
+    "encryptedPassword": "0cf03fa01dc88aacb54d4bfe254ccb4c:239f45b171b6c4b1e150c0e7dfd2c47e"
+  },
+  {
+    "id": "1773176624899",
+    "username": "b",
+    "email": "b@b",
+    "password": "$2b$10$aKr56yIbyCgnBdgvVBAUCO9BdWl.FBgi244zc4qrHdKa3V65rRjMa",
+    "role": "Student",
+    "status": "approved",
+    "permissions": [],
+    "fullName": "",
+    "mobileNumber": "",
+    "encryptedPassword": "8dd557d8d614a46d2884d88ac4089617:e126d62d91501ba63bbb0ad3658a4073",
+    "section": "419"
   }
 ]

@@ -1,12 +1,12 @@
 import React from 'react';
 import { Link, useLocation, Navigate } from 'react-router-dom';
-import { Database, Settings, Shield, ChevronRight } from 'lucide-react';
+import { Database, Settings, Shield, ChevronRight, UserCog, Users, UserCircle, Key, Type } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { useAuth } from '../../contexts/AuthContext';
 
 const SettingsLayout = ({ children }) => {
     const location = useLocation();
-    const { user } = useAuth();
+    const { user, hasAnyPermission, hasPermission } = useAuth();
 
     if (!user) {
         return <Navigate to="/auth" replace />;
@@ -20,13 +20,25 @@ const SettingsLayout = ({ children }) => {
     }
 
     // Admin panel only for specific roles
-    if (user && ['Super Admin', 'Admin'].includes(user.role)) {
+    if (user && hasAnyPermission(['manage_faculty', 'manage_courses', 'manage_rooms', 'manage_batches'])) {
         settingItems.push({ path: '/admin', label: 'Admin Panel', icon: <Database size={18} /> });
     }
 
-    // User management only for Super Admin
-    if (user && user.role === 'Super Admin') {
-        settingItems.push({ path: '/users', label: 'Users', icon: <Shield size={18} /> });
+    // Settings for public registration configuration
+    if (user && (user.role === 'Super Admin' || user.role === 'Admin')) {
+        settingItems.push({ path: '/registration-settings', label: 'Registration Settings', icon: <UserCog size={18} /> });
+    }
+
+    // User management only for Super Admin or those with permission
+    if (user && hasPermission('assign_permissions')) {
+        settingItems.push({ path: '/users', label: 'User Approvals', icon: <Users size={18} /> });
+    }
+
+    // Personal user settings (available to everyone)
+    if (user) {
+        settingItems.push({ path: '/profile', label: 'Edit Profile', icon: <UserCircle size={18} /> });
+        settingItems.push({ path: '/password', label: 'Change Password', icon: <Key size={18} /> });
+        settingItems.push({ path: '/name-change', label: 'Request Name Change', icon: <Type size={18} /> });
     }
 
     // If on /settings, redirect to the first available page

@@ -52,6 +52,7 @@ export const generateWeeklyRoutinePDF = (pdfSettings, allFaculty = []) => {
             html: '#week-routine-table',
             startY: 36,
             theme: 'grid',
+            rowPageBreak: 'avoid',
             styles: {
                 font: pdfSettings.fontStyle,
                 fontSize: pdfSettings.fontSize,
@@ -279,6 +280,7 @@ export const generateWeeklyRoutinePDF = (pdfSettings, allFaculty = []) => {
                 autoTable(doc, {
                     startY: currentY,
                     theme: 'grid',
+                    rowPageBreak: 'avoid',
                     head: [[{
                         content: 'Faculty Members of the Department of Computer Science and Engineering',
                         colSpan: permCols * 3,
@@ -359,6 +361,7 @@ export const generateWeeklyRoutinePDF = (pdfSettings, allFaculty = []) => {
                 autoTable(doc, {
                     startY: currentY,
                     theme: 'grid',
+                    rowPageBreak: 'avoid',
                     head: [[{
                         content: 'Guest Teachers of the Department of Computer Science and Engineering',
                         colSpan: guestCols * 3,

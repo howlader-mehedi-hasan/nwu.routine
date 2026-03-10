@@ -8,18 +8,31 @@ import FacultyList from './components/FacultyList';
 import AuthPage from './components/AuthPage';
 import UserManagement from './components/UserManagement';
 import UserDashboard from './components/UserDashboard';
+import RegistrationSettings from './components/RegistrationSettings';
+import ProfileSettings from './components/ProfileSettings';
+import PasswordSettings from './components/PasswordSettings';
+import NameChangeSettings from './components/NameChangeSettings';
 import SettingsLayout from './components/layout/SettingsLayout';
 import { ThemeProvider } from './components/ui/ThemeProvider';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { Toaster } from 'react-hot-toast';
 
-const ProtectedRoute = ({ children, allowedRoles }) => {
-  const { user, loading } = useAuth();
+const ProtectedRoute = ({ children, allowedRoles, requiredPermission, requiredAnyPermission }) => {
+  const { user, loading, hasPermission, hasAnyPermission } = useAuth();
 
   if (loading) return <div>Loading...</div>;
 
   // Unauthenticated -> Force login
   if (!user) return <Navigate to="/auth" replace />;
+
+  // Check specific permission if required
+  if (requiredPermission && !hasPermission(requiredPermission)) {
+    return <Navigate to="/" replace />;
+  }
+
+  if (requiredAnyPermission && !hasAnyPermission(requiredAnyPermission)) {
+    return <Navigate to="/" replace />;
+  }
 
   // Insufficient permissions -> Route to Home
   if (allowedRoles && !allowedRoles.includes(user.role)) {
@@ -49,13 +62,13 @@ function AppRoutes() {
       } />
 
       <Route path="/admin" element={
-        <ProtectedRoute allowedRoles={['Super Admin', 'Admin']}>
+        <ProtectedRoute requiredAnyPermission={['manage_faculty', 'manage_courses', 'manage_rooms', 'manage_batches']}>
           <DashboardLayout><SettingsLayout><AdminPanel /></SettingsLayout></DashboardLayout>
         </ProtectedRoute>
       } />
 
       <Route path="/users" element={
-        <ProtectedRoute allowedRoles={['Super Admin']}>
+        <ProtectedRoute requiredPermission="assign_permissions">
           <DashboardLayout><SettingsLayout><UserManagement /></SettingsLayout></DashboardLayout>
         </ProtectedRoute>
       } />
@@ -63,6 +76,30 @@ function AppRoutes() {
       <Route path="/settings" element={
         <ProtectedRoute>
           <DashboardLayout><SettingsLayout>&nbsp;</SettingsLayout></DashboardLayout>
+        </ProtectedRoute>
+      } />
+
+      <Route path="/registration-settings" element={
+        <ProtectedRoute requiredAnyPermission={['assign_permissions', 'manage_faculty', 'manage_courses']}>
+          <DashboardLayout><SettingsLayout><RegistrationSettings /></SettingsLayout></DashboardLayout>
+        </ProtectedRoute>
+      } />
+
+      <Route path="/profile" element={
+        <ProtectedRoute>
+          <DashboardLayout><SettingsLayout><ProfileSettings /></SettingsLayout></DashboardLayout>
+        </ProtectedRoute>
+      } />
+      
+      <Route path="/password" element={
+        <ProtectedRoute>
+          <DashboardLayout><SettingsLayout><PasswordSettings /></SettingsLayout></DashboardLayout>
+        </ProtectedRoute>
+      } />
+      
+      <Route path="/name-change" element={
+        <ProtectedRoute>
+          <DashboardLayout><SettingsLayout><NameChangeSettings /></SettingsLayout></DashboardLayout>
         </ProtectedRoute>
       } />
     </Routes>
