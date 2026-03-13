@@ -136,3 +136,35 @@ The downloaded PDF table borders have to restyle
 All borders are change to pure solid black.
 Standard cell borders must have a 0.3mm width.
 The vertical boundary lines that separate each Day have a thicker 1mm width (to perfectly match the UI layout where days are distinctly separated).
+
+
+Faculty Selection & Personalized Routine View
+The goal is to allow new users registering as "Faculty" to select their specific faculty profile from a dropdown, and ensure that when a faculty member views the routine page, it automatically displays their personalized schedule.
+
+Proposed Changes
+Client (Frontend)
+[MODIFY] 
+client/src/components/AuthPage.jsx
+Add a new state variable faculties and fetch all faculties during component mount alongside batches and roles.
+Add facultyId to the initial formData state.
+Add a new conditional form field that appears when formData.role === 'Faculty'. This field will be a <select> dropdown populated with the fetched faculties.
+Ensure facultyId is required if role === 'Faculty' before form submission.
+[MODIFY] 
+client/src/components/RoutineView.jsx
+Update the viewMode and selectedFacultyId state initialization logic.
+If the logged-in user.role === 'Faculty' and they have a facultyId, set viewMode to 'faculty' and selectedFacultyId to the user's facultyId by default.
+Server (Backend)
+[MODIFY] 
+server/controllers/authController.js
+In exports.register and exports.createUser, extract facultyId from req.body.
+Save facultyId to the newly created user object.
+In exports.updateUser, allow updating the facultyId field so Super Admins can assign or correct a user's faculty profile.
+Verification Plan
+Automated Tests
+Currently, there are no existing jest/mocha automated tests for this codebase.
+
+Manual Verification
+Frontend Registration: Run the application locally and navigate to the registration page. Select "Faculty" as the requested role and verify that a dropdown of all faculties instantly appears.
+Backend Storage: Submit a registration request as a Faculty. Upon approval (or using Mock data), verify that the 
+users.json
+ backend file successfully stores the selected facultyId.

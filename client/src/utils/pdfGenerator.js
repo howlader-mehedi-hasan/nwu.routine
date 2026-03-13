@@ -2,7 +2,7 @@ import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import toast from 'react-hot-toast';
 
-export const generateWeeklyRoutinePDF = (pdfSettings, allFaculty = []) => {
+export const generateWeeklyRoutinePDF = (pdfSettings, allFaculty = [], tableSelector = '#week-routine-table') => {
     try {
         const doc = new jsPDF('l', 'mm', 'a3');
         const pageWidth = doc.internal.pageSize.getWidth();
@@ -24,6 +24,13 @@ export const generateWeeklyRoutinePDF = (pdfSettings, allFaculty = []) => {
         // 3. Semester Name
         doc.setFontSize(Math.max(10, pdfSettings.headerFontSize - 4));
         doc.text(pdfSettings.semesterName || `Routine for Semester`, pageWidth / 2, 28, { align: "center" });
+
+        let startY = 36;
+        if (pdfSettings.routineTitle) {
+            doc.setFontSize(Math.max(10, pdfSettings.headerFontSize - 5));
+            doc.text(pdfSettings.routineTitle, pageWidth / 2, 34, { align: "center" });
+            startY = 40; // Push table down a bit to fit the title
+        }
 
 
         // --- Top Left Box: Updated Date ---
@@ -49,8 +56,8 @@ export const generateWeeklyRoutinePDF = (pdfSettings, allFaculty = []) => {
         }
 
         autoTable(doc, {
-            html: '#week-routine-table',
-            startY: 36,
+            html: tableSelector,
+            startY: startY,
             theme: 'grid',
             rowPageBreak: 'avoid',
             styles: {
@@ -177,7 +184,11 @@ export const generateWeeklyRoutinePDF = (pdfSettings, allFaculty = []) => {
                     data.cell.styles.textColor = [0, 0, 0]; // Black text
 
                     // Format time headers into two lines (e.g. "09:00 AM - 10:00 AM")
-                    if (data.row.index === 1 && data.cell.text && data.cell.text.length > 0) {
+                    // Only apply to the 2nd row if it's a multi-row header (Weekly View)
+                    // Or apply to the 1st row if it's a single-row header (Daily View)
+                    const isTimeRow = (data.table.head.length > 1 && data.row.index === 1) || (data.table.head.length === 1 && data.row.index === 0);
+
+                    if (isTimeRow && data.cell.text && data.cell.text.length > 0) {
                         const cellText = data.cell.text[0];
                         if (cellText && cellText.includes('-')) {
                             const [start, end] = cellText.split('-');
@@ -565,6 +576,83 @@ export const generateWeeklyRoutinePDF = (pdfSettings, allFaculty = []) => {
 
         doc.save(finalFileName);
         toast.success('PDF downloaded!');
+    } catch (error) {
+        console.error("PDF generation failed:", error);
+        toast.error('Failed to generate PDF');
+    }
+};
+
+export const generateRoutineViewPDF = (title, subtitle, tableColumn, tableRows) => {
+    try {
+        const doc = new jsPDF('l', 'mm', 'a3');
+        const pageWidth = doc.internal.pageSize.getWidth();
+
+        // Apply Global Font Style
+        doc.setFont('helvetica');
+
+        // 1. University Name
+        doc.setFontSize(18);
+        doc.setFont('helvetica', 'bold');
+        doc.text("North Western University", pageWidth / 2, 18, { align: "center" });
+
+        // 2. Department Name
+        doc.setFontSize(14);
+        doc.setFont('helvetica', 'normal');
+        doc.text("Department of Computer Science and Engineering", pageWidth / 2, 26, { align: "center" });
+
+        // 3. Title & Subtitle
+        doc.setFontSize(14);
+        doc.setFont('helvetica', 'bold');
+        doc.text(title || "Class Routine", pageWidth / 2, 36, { align: "center" });
+
+        if (subtitle) {
+            doc.setFontSize(12);
+            doc.setFont('helvetica', 'normal');
+            doc.text(subtitle, pageWidth / 2, 44, { align: "center" });
+        }
+
+        const today = new Date();
+        const formattedDate = `${String(today.getDate()).padStart(2, '0')}-${String(today.getMonth() + 1).padStart(2, '0')}-${today.getFullYear()}`;
+        doc.setFontSize(10);
+        doc.text(`Generated on: ${formattedDate}`, 14, 18);
+
+        autoTable(doc, {
+            head: [tableColumn],
+            body: tableRows,
+            startY: subtitle ? 52 : 44,
+            theme: 'grid',
+            styles: {
+                font: 'helvetica',
+                fontSize: 10,
+                cellPadding: 3,
+                halign: 'center',
+                valign: 'middle',
+                textColor: [0, 0, 0],
+                lineWidth: 0.3,
+                lineColor: [0, 0, 0]
+            },
+            headStyles: {
+                fillColor: [79, 70, 229], // Indigo 600
+                textColor: [255, 255, 255],
+                fontStyle: 'bold',
+                fontSize: 11
+            },
+            columnStyles: { 0: { halign: 'left', fontStyle: 'bold', cellWidth: 40 } }
+        });
+
+        // Add Footer Layout (Left, Center Pagination, Right)
+        const pageCount = doc.internal.getNumberOfPages();
+        for (let i = 1; i <= pageCount; i++) {
+            doc.setPage(i);
+            doc.setFontSize(9);
+            doc.setFont('helvetica', 'normal');
+            const yPos = doc.internal.pageSize.height - 10;
+            doc.text("Generated by NWU Smart Routine System", 14, yPos, { align: 'left' });
+            doc.text(`Page ${i} of ${pageCount}`, pageWidth / 2, yPos, { align: 'center' });
+        }
+
+        doc.save(`routine_${new Date().getTime()}.pdf`);
+        toast.success('PDF downloaded successfully!');
     } catch (error) {
         console.error("PDF generation failed:", error);
         toast.error('Failed to generate PDF');

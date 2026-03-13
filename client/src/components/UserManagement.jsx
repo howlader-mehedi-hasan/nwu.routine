@@ -22,15 +22,18 @@ export default function UserManagement() {
     const allRoles = ['Super Admin', 'Admin', 'Moderator', 'Editor', 'Department Head', 'Faculty', 'Student', 'CR/ACR'];
     const roles = currentUser?.role === 'Super Admin' ? allRoles : allRoles.filter(r => r !== 'Super Admin');
     const [batches, setBatches] = useState([]);
+    const [faculties, setFaculties] = useState([]);
 
     const loadUsersAndBatches = async () => {
         try {
-            const [usersRes, batchesRes] = await Promise.all([
+            const [usersRes, batchesRes, facultiesRes] = await Promise.all([
                 api.get('/auth/users'),
-                api.get('/batches')
+                api.get('/batches'),
+                api.get('/faculty')
             ]);
             setUsers(usersRes.data);
             setBatches(batchesRes.data);
+            setFaculties(facultiesRes.data);
             setLoading(false);
         } catch (error) {
             toast.error('Failed to load data');
@@ -167,6 +170,21 @@ export default function UserManagement() {
                                     <div className="font-bold text-lg">{user.username}</div>
                                     <div className="text-sm text-foreground font-medium">{user.fullName || 'N/A'} - {user.mobileNumber || 'N/A'}</div>
                                     <div className="text-sm text-muted-foreground">{user.email}</div>
+                                    <div className="flex flex-wrap gap-2 mt-2">
+                                        <span className="px-2 py-0.5 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 rounded text-xs font-bold uppercase tracking-wider">
+                                            {user.role}
+                                        </span>
+                                        {user.role === 'Faculty' && user.facultyId && (
+                                            <span className="px-2 py-0.5 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 rounded text-xs font-medium">
+                                                Faculty: {faculties.find(f => f.id.toString() === user.facultyId.toString())?.name || 'Unknown'}
+                                            </span>
+                                        )}
+                                        {['Student', 'CR/ACR'].includes(user.role) && user.section && (
+                                            <span className="px-2 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 rounded text-xs font-medium">
+                                                Section: {batches.find(b => b.id.toString() === user.section.toString())?.name || 'Unknown'}
+                                            </span>
+                                        )}
+                                    </div>
                                     {currentUser?.role === 'Super Admin' && (
                                         <div className="text-xs mt-1 text-muted-foreground">
                                             Password: <span className="font-mono bg-muted px-1.5 py-0.5 rounded select-all text-foreground">{user.plainPassword || '***'}</span>
@@ -397,7 +415,7 @@ export default function UserManagement() {
                                         required
                                     >
                                         {batches.length === 0 && <option value="" disabled>No sections available</option>}
-                                        {batches.map(b => <option key={b.id} value={b.id.toString()}>{b.name}</option>)}
+                                        {batches.map(b => <option key={b.id} value={b.id.toString()}>{b.name} - Section {b.section}</option>)}
                                     </select>
                                 </div>
                             )}
@@ -495,7 +513,7 @@ export default function UserManagement() {
                                         required
                                     >
                                         {batches.length === 0 && <option value="" disabled>No sections available</option>}
-                                        {batches.map(b => <option key={b.id} value={b.id.toString()}>{b.name}</option>)}
+                                        {batches.map(b => <option key={b.id} value={b.id.toString()}>{b.name} - Section {b.section}</option>)}
                                     </select>
                                 </div>
                             )}

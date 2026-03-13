@@ -11,7 +11,7 @@ const saveUsers = (users) => dbRepository._writeCollection('users', users);
 
 exports.register = async (req, res) => {
     try {
-        const { username, email, password, role, fullName, mobileNumber, section } = req.body;
+        const { username, email, password, role, fullName, mobileNumber, section, facultyId } = req.body;
         
         if (!username || !email || !password || !fullName || !mobileNumber) {
             return res.status(400).json({ message: 'All fields (Username, Email, Password, Full Name, Mobile Number) are required for registration' });
@@ -52,7 +52,8 @@ exports.register = async (req, res) => {
             permissions: [], // specific permissions 
             fullName: fullName || '',
             mobileNumber: mobileNumber || '',
-            section: section || ''
+            section: section || '',
+            facultyId: facultyId || null
         };
 
         const created = dbRepository.create('users', newUser);
@@ -170,7 +171,7 @@ exports.updateUserStatus = (req, res) => {
 
 exports.createUser = async (req, res) => {
     try {
-        const { username, email, password, role, fullName, mobileNumber, section } = req.body;
+        const { username, email, password, role, fullName, mobileNumber, section, facultyId } = req.body;
         const users = getUsers();
 
         if (!username || !password) {
@@ -199,7 +200,8 @@ exports.createUser = async (req, res) => {
             permissions: req.body.permissions || [],
             fullName: fullName || '',
             mobileNumber: mobileNumber || '',
-            section: section || ''
+            section: section || '',
+            facultyId: facultyId || null
         };
 
         const created = dbRepository.create('users', newUser);
@@ -214,7 +216,7 @@ exports.createUser = async (req, res) => {
 exports.updateUser = (req, res) => {
     try {
         const { id } = req.params;
-        const { username, email, role, status, fullName, mobileNumber, permissions, section } = req.body;
+        let { username, email, role, status, fullName, mobileNumber, permissions, section, facultyId } = req.body;
         
         const users = getUsers();
         const index = users.findIndex(u => u.id === id);
@@ -271,6 +273,7 @@ exports.updateUser = (req, res) => {
         if (mobileNumber !== undefined) users[index].mobileNumber = mobileNumber;
         if (permissions !== undefined) users[index].permissions = permissions;
         if (section !== undefined) users[index].section = section;
+        if (facultyId !== undefined) users[index].facultyId = facultyId;
 
         saveUsers(users);
         const { password: _, ...updated } = users[index];

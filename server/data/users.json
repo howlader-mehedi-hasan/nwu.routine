@@ -103,5 +103,47 @@
     "mobileNumber": "",
     "encryptedPassword": "8dd557d8d614a46d2884d88ac4089617:e126d62d91501ba63bbb0ad3658a4073",
     "section": "419"
+  },
+  {
+    "id": "1773354819168",
+    "username": "mahedi2",
+    "email": "m@hi",
+    "password": "$2b$10$PEmkNbXua/M1nAH0J650Uek6B9LuLhvrfTJg9RGgR.xRAqBkEOpcO",
+    "encryptedPassword": "cd0f392a5e794efbf4b2644b070a9f20:2a3c4d43f4f572d32b570106cc8d13b8",
+    "role": "Faculty",
+    "status": "approved",
+    "permissions": [],
+    "fullName": "m",
+    "mobileNumber": "016",
+    "section": "401",
+    "facultyId": "101"
+  },
+  {
+    "id": "1773354957931",
+    "username": "h",
+    "email": "h@m",
+    "password": "$2b$10$zPvv6RwoMOR7rNV47qO7ruN9HjZQgmYVZtjYgJS.zikkRibDLdWFO",
+    "encryptedPassword": "833fe0c6e3225797787a9797a7a4d570:289caeafcfcadf08f0adcd117e9d721f",
+    "role": "Student",
+    "status": "approved",
+    "permissions": [],
+    "fullName": "hi",
+    "mobileNumber": "0",
+    "section": "401",
+    "facultyId": "101"
+  },
+  {
+    "id": "1773358776224",
+    "username": "j",
+    "email": "jasia@sultana",
+    "password": "$2b$10$C6r8qT6P7EevA/VEtLZngu6tZa.ONMn4WBAeN7xREzpS9EZMHVQgy",
+    "encryptedPassword": "9f0f38491cc6b680f394895b43b3b08e:ab447448b5ba629c2a66bc66e8b47717",
+    "role": "CR/ACR",
+    "status": "approved",
+    "permissions": [],
+    "fullName": "Jasia",
+    "mobileNumber": "01951527404",
+    "section": "419",
+    "facultyId": "101"
   }
 ]

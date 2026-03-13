@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { getRoutine, addRoutineEntry, updateRoutineEntry, deleteRoutineEntry, clearRoutine, getRooms, getFaculty, getBatches, getCourses, updateBatch, getSettings } from '../services/api';
-import jsPDF from 'jspdf';
+import { generateRoutineViewPDF } from '../utils/pdfGenerator';
 import autoTable from 'jspdf-autotable';
 import { Download, Plus, Filter, Calendar, Settings, X, Check, Trash2, Edit2, MapPin } from 'lucide-react';
 import { Button } from './ui/Button';
@@ -21,6 +21,19 @@ const RoutineView = ({ overtimeVisibility, setOvertimeVisibility }) => {
     const [viewMode, setViewMode] = useState('master'); // 'master', 'section', 'batch', 'faculty'
     const [selectedBatchId, setSelectedBatchId] = useState(''); // For Section View
     const [selectedFacultyId, setSelectedFacultyId] = useState(''); // For Faculty View
+
+    // Initialize state based on user role
+    useEffect(() => {
+        if (user) {
+            if (user.role === 'Faculty' && user.facultyId) {
+                setViewMode('faculty');
+                setSelectedFacultyId(user.facultyId.toString());
+            } else if (['Student', 'CR/ACR'].includes(user.role) && user.section) {
+                setViewMode('section');
+                setSelectedBatchId(user.section.toString());
+            }
+        }
+    }, [user]);
 
     // Removed local overtimeVisibility state, now using props
 
@@ -580,25 +593,22 @@ const RoutineView = ({ overtimeVisibility, setOvertimeVisibility }) => {
     // const getCellData = (batchId, timeSlot) => renderRawCell(batchId, timeSlot, selectedDay);
 
     const downloadPDF = () => {
-        const doc = new jsPDF('l', 'mm', 'a3');
-        doc.setFontSize(18);
-
-        let title = `Class Routine`;
-        if (viewMode === 'master') title += ` - ${selectedDay}`;
+        let title = "Class Routine";
+        let subtitle = "";
+        
+        if (viewMode === 'master') {
+            subtitle = `Master Routine - ${selectedDay}`;
+        }
         if (viewMode === 'section') {
             const b = metadata.batches.find(b => String(b.id) === String(selectedBatchId));
-            title += ` - ${b ? b.name + ' (' + b.section + ')' : ''}`;
+            subtitle = `Section Routine - ${b ? b.name + ' (' + b.section + ')' : ''}`;
         }
         if (viewMode === 'faculty') {
             const f = metadata.faculty.find(f => String(f.id) === String(selectedFacultyId));
-            title += ` - ${f ? f.name : ''}`;
+            subtitle = `Faculty Routine - ${f ? f.name : ''}`;
         }
 
-        doc.text(title, 14, 15);
-        doc.setFontSize(10);
-        doc.text(`Generated: ${new Date().toLocaleDateString()}`, 14, 22);
-
-        const tableColumn = [viewMode === 'master' ? "Batch" : "Day", ...theorySlots];
+        const tableColumn = [viewMode === 'master' ? "Batch" : "Day", ...currentTheorySlots];
         const tableRows = [];
 
         if (viewMode === 'master') {
@@ -606,20 +616,23 @@ const RoutineView = ({ overtimeVisibility, setOvertimeVisibility }) => {
             let visibleBatches = metadata.batches;
 
             visibleBatches.forEach(batch => {
-                const row = [batch.name + (batch.section ? ` (${batch.section})` : '')];
+                const row = [batch.name + (batch.section ? `\n(Sec ${batch.section})` : '')];
                 let i = 0;
-                while (i < theorySlots.length) {
-                    const slot = theorySlots[i];
+                while (i < currentTheorySlots.length) {
+                    const slot = currentTheorySlots[i];
                     const data = getCellData(batch.id, slot);
                     if (data && data.length > 0) {
                         const d = data[0]; // Simplified for PDF
-                        row.push(`${d.course}\n${d.faculty}\n${d.room}`);
+                        const isAlt = data.some(dItem => dItem.credit === 0.75 || dItem.credit === "0.75");
+                        const altText = isAlt ? '\nALT' : '';
+                        row.push(`${d.course}\n${d.faculty}\n${d.room !== 'TBA' ? 'R-' + d.room : ''}${altText}`);
+                        
                         if (d.isLab && labSlots.includes(d.originalTime)) {
                             i++;
                             row.push('');
                         }
                     } else {
-                        row.push('');
+                        row.push('-');
                     }
                     i++;
                 }
@@ -630,18 +643,24 @@ const RoutineView = ({ overtimeVisibility, setOvertimeVisibility }) => {
             days.forEach(day => {
                 const row = [day];
                 let i = 0;
-                while (i < theorySlots.length) {
-                    const slot = theorySlots[i];
+                while (i < currentTheorySlots.length) {
+                    const slot = currentTheorySlots[i];
                     const data = getWeeklyCellData(day, slot);
                     if (data && data.length > 0) {
                         const d = data[0];
-                        row.push(`${d.course}\n${viewMode === 'faculty' ? metadata.batches.find(b => b.id === d.batchId)?.name + " " + (metadata.batches.find(b => b.id === d.batchId)?.section || '') : d.faculty}\n${d.room}`); // Show Batch for Faculty view
+                        const isAlt = data.some(dItem => dItem.credit === 0.75 || dItem.credit === "0.75");
+                        const altText = isAlt ? '\nALT' : '';
+                        const facultyOrBatch = viewMode === 'faculty' 
+                            ? (metadata.batches.find(b => b.id === d.batchId)?.name + " " + (metadata.batches.find(b => b.id === d.batchId)?.section || '')) 
+                            : d.faculty;
+                        
+                        row.push(`${d.course}\n${facultyOrBatch}\n${d.room !== 'TBA' ? 'R-' + d.room : ''}${altText}`);
                         if (d.isLab && labSlots.includes(d.originalTime)) {
                             i++;
                             row.push('');
                         }
                     } else {
-                        row.push('');
+                        row.push('-');
                     }
                     i++;
                 }
@@ -649,18 +668,7 @@ const RoutineView = ({ overtimeVisibility, setOvertimeVisibility }) => {
             });
         }
 
-        autoTable(doc, {
-            head: [tableColumn],
-            body: tableRows,
-            startY: 25,
-            theme: 'grid',
-            styles: { fontSize: 8, cellPadding: 2, halign: 'center', valign: 'middle' },
-            headStyles: { fillColor: [79, 70, 229], textColor: 255, fontSize: 10 },
-            columnStyles: { 0: { halign: 'left', fontStyle: 'bold', cellWidth: 30 } }
-        });
-
-        doc.save(`routine.pdf`);
-        toast.success('PDF downloaded!');
+        generateRoutineViewPDF(title, subtitle, tableColumn, tableRows);
     };
 
     // Determine active time slots based on selected course
@@ -693,7 +701,7 @@ const RoutineView = ({ overtimeVisibility, setOvertimeVisibility }) => {
                             </>
                         )}
                         {user && (
-                            <Button variant="outline" onClick={downloadPDF}>
+                            <Button variant="outline" onClick={downloadPDF} className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm hover:text-white border-0">
                                 <Download className="mr-2 h-4 w-4" />
                                 Download PDF
                             </Button>
@@ -1041,10 +1049,13 @@ const RoutineView = ({ overtimeVisibility, setOvertimeVisibility }) => {
                 )}
             </div>
 
+        <div className="space-y-6 max-w-[100vw] overflow-x-hidden px-4 relative">
+            {/* Header Section */}
+            {/* ... rest of your code ... */}
             {/* Master Schedule Table */}
             <div className="bg-card rounded-lg border border-border shadow-sm overflow-hidden">
                 <div className="overflow-x-auto">
-                    <table className="w-full text-sm text-left">
+                    <table id="routine-view-table" className="w-full text-sm text-left">
                         <thead className="text-xs uppercase bg-muted/50 text-muted-foreground">
                             <tr>
                                 <th className="px-4 py-4 w-48 font-bold border-r border-border text-center sticky left-0 bg-secondary z-10 transition-colors">
@@ -1193,6 +1204,7 @@ const RoutineView = ({ overtimeVisibility, setOvertimeVisibility }) => {
                 onClose={() => setShowSettingsModal(false)}
                 onSettingsUpdated={(newSettings) => setScheduleSettings(newSettings)}
             />
+
         </div>
     );
 };

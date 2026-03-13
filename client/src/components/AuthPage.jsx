@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
-import { getSettings } from '../services/api';
+import { getSettings, getFaculty } from '../services/api';
 import axios from 'axios';
 
 export default function AuthPage() {
@@ -14,7 +14,8 @@ export default function AuthPage() {
         role: 'Student',
         fullName: '',
         mobileNumber: '',
-        section: ''
+        section: '',
+        facultyId: ''
     });
     const { login, register, api } = useAuth();
     const navigate = useNavigate();
@@ -22,6 +23,7 @@ export default function AuthPage() {
     const allRoles = ['Super Admin', 'Admin', 'Moderator', 'Editor', 'Department Head', 'Faculty', 'Student', 'CR/ACR'];
     const [allowedRoles, setAllowedRoles] = useState(['Student', 'Faculty', 'CR/ACR']);
     const [batches, setBatches] = useState([]);
+    const [faculties, setFaculties] = useState([]);
 
     useEffect(() => {
         const fetchRolesAndBatches = async () => {
@@ -41,7 +43,7 @@ export default function AuthPage() {
 
             try {
                 // Determine base URL since we aren't logged in yet, we can't fully rely on the protected api wrapper
-                const baseURL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+                const baseURL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
                 const batchRes = await axios.get(`${baseURL}/batches`);
                 if (batchRes.data && Array.isArray(batchRes.data)) {
                     setBatches(batchRes.data);
@@ -49,8 +51,16 @@ export default function AuthPage() {
                        setFormData(prev => ({ ...prev, section: batchRes.data[0].id.toString() }));
                     }
                 }
+
+                const facultyRes = await axios.get(`${baseURL}/faculty`);
+                if (facultyRes.data && Array.isArray(facultyRes.data)) {
+                    setFaculties(facultyRes.data);
+                    if (facultyRes.data.length > 0 && !formData.facultyId) {
+                       setFormData(prev => ({ ...prev, facultyId: facultyRes.data[0].id.toString() }));
+                    }
+                }
             } catch (err) {
-                 console.error("Failed to load sections/batches", err);
+                 console.error("Failed to load sections/batches/faculties", err);
             }
         };
         fetchRolesAndBatches();
@@ -143,6 +153,21 @@ export default function AuthPage() {
                                         {allowedRoles.map(r => <option key={r} value={r}>{r}</option>)}
                                     </select>
                                 </div>
+                                {formData.role === 'Faculty' && (
+                                    <div>
+                                        <label className="text-sm font-medium">Select Faculty Profile</label>
+                                        <select
+                                            className="w-full px-3 py-2 border rounded-md bg-transparent"
+                                            value={formData.facultyId}
+                                            onChange={(e) => setFormData({ ...formData, facultyId: e.target.value })}
+                                            required
+                                        >
+                                            <option value="">None / Not Specified</option>
+                                            {faculties.length === 0 && <option value="" disabled>No faculties available</option>}
+                                            {faculties.map(f => <option key={f.id} value={f.id.toString()}>{f.name} ({f.initials})</option>)}
+                                        </select>
+                                    </div>
+                                )}
                                 {['Student', 'CR/ACR'].includes(formData.role) && (
                                     <div>
                                         <label className="text-sm font-medium">Section / Batch</label>
@@ -152,8 +177,9 @@ export default function AuthPage() {
                                             onChange={(e) => setFormData({ ...formData, section: e.target.value })}
                                             required
                                         >
+                                            <option value="">None / Not Specified</option>
                                             {batches.length === 0 && <option value="" disabled>No sections available</option>}
-                                            {batches.map(b => <option key={b.id} value={b.id.toString()}>{b.name}</option>)}
+                                            {batches.map(b => <option key={b.id} value={b.id.toString()}>{b.name} (Section {b.section})</option>)}
                                         </select>
                                     </div>
                                 )}
