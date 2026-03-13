@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation, Navigate } from 'react-router-dom';
-import { Database, Settings, Shield, ChevronRight, UserCog, Users, UserCircle, Key, Type } from 'lucide-react';
+import { Database, Settings, Shield, ChevronRight, UserCog, Users, UserCircle, Key, Type, History } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { useAuth } from '../../contexts/AuthContext';
 
@@ -39,6 +39,11 @@ const SettingsLayout = ({ children }) => {
         settingItems.push({ path: '/profile', label: 'Edit Profile', icon: <UserCircle size={18} /> });
         settingItems.push({ path: '/password', label: 'Change Password', icon: <Key size={18} /> });
         settingItems.push({ path: '/name-change', label: 'Request Name Change', icon: <Type size={18} /> });
+    }
+
+    // Activity Log
+    if (user && (user.role === 'Super Admin' || hasPermission('view_activity_logs'))) {
+        settingItems.push({ path: '/activity-log', label: 'Activity Log', icon: <History size={18} /> });
     }
 
     // If on /settings, redirect to the first available page

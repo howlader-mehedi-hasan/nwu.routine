@@ -531,6 +531,7 @@ export default function UserManagement() {
                                         { id: 'manage_rooms', label: 'Manage Rooms', desc: '(Can add, edit, or delete rooms)' },
                                         { id: 'manage_batches', label: 'Manage Batches', desc: '(Can add, edit, or delete batches)' },
                                         { id: 'assign_permissions', label: 'Assign Permissions', desc: '(Can manage user roles and permissions)' },
+                                        { id: 'view_activity_logs', label: 'View Activity Logs', desc: '(Can view the system activity log)' },
                                     ].map(perm => (
                                         <label key={perm.id} className="flex items-center gap-2 cursor-pointer">
                                             <input

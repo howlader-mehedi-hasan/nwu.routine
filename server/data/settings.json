@@ -29,7 +29,11 @@
     "registration_roles": [
       "Student",
       "Faculty",
-      "CR/ACR"
+      "CR/ACR",
+      "Editor",
+      "Moderator",
+      "Department Head",
+      "Admin"
     ]
   },
   "daily_overrides": {

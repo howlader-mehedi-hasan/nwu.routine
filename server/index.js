@@ -18,6 +18,7 @@ app.use('/api/rooms', require('./routes/roomRoutes'));
 app.use('/api/batches', require('./routes/batchRoutes'));
 app.use('/api/routine', require('./routes/routineRoutes'));
 app.use('/api/settings', require('./routes/settingsRoutes'));
+app.use('/api/audit-logs', require('./routes/auditLogRoutes'));
 
 // Basic Route
 app.get('/', (req, res) => {

@@ -145,5 +145,19 @@
     "mobileNumber": "01951527404",
     "section": "419",
     "facultyId": "101"
+  },
+  {
+    "id": "1773398635263",
+    "username": "c",
+    "email": "d@r",
+    "password": "$2b$10$52lqd.15Z/PLbsfOSfirI.itfiWktOpCddlugQPumEdxz2TV3rTku",
+    "encryptedPassword": "3a1074614ebddb1a10fd04d14c6eab89:ee8e7e494453b16d014d7147a4b728cc",
+    "role": "Editor",
+    "status": "approved",
+    "permissions": [],
+    "fullName": "c",
+    "mobileNumber": "1",
+    "section": "401",
+    "facultyId": "101"
   }
 ]

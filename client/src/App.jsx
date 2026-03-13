@@ -12,6 +12,7 @@ import RegistrationSettings from './components/RegistrationSettings';
 import ProfileSettings from './components/ProfileSettings';
 import PasswordSettings from './components/PasswordSettings';
 import NameChangeSettings from './components/NameChangeSettings';
+import ActivityLogs from './components/ActivityLogs';
 import SettingsLayout from './components/layout/SettingsLayout';
 import { ThemeProvider } from './components/ui/ThemeProvider';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
@@ -100,6 +101,12 @@ function AppRoutes() {
       <Route path="/name-change" element={
         <ProtectedRoute>
           <DashboardLayout><SettingsLayout><NameChangeSettings /></SettingsLayout></DashboardLayout>
+        </ProtectedRoute>
+      } />
+
+      <Route path="/activity-log" element={
+        <ProtectedRoute requiredPermission="view_activity_logs">
+          <DashboardLayout><SettingsLayout><ActivityLogs /></SettingsLayout></DashboardLayout>
         </ProtectedRoute>
       } />
     </Routes>

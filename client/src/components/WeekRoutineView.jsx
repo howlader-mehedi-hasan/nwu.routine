@@ -488,10 +488,19 @@ const WeekRoutineView = ({ overtimeVisibility, setOvertimeVisibility }) => {
                     )}
                     {user && (
                         <div className="flex bg-muted/30 p-1 rounded-md border border-border">
-                            <Button variant="ghost" size="sm" onClick={() => setIsPdfModalOpen(true)} title="PDF Settings" className="text-muted-foreground hover:text-indigo-600 border-r border-border rounded-r-none pr-3">
-                                <Settings2 className="h-4 w-4" />
-                            </Button>
-                            <Button variant="default" className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm rounded-l-none" onClick={() => downloadPDF(pdfSettings)}>
+                            {canEdit && (
+                                <Button variant="ghost" size="sm" onClick={() => setIsPdfModalOpen(true)} title="PDF Settings" className="text-muted-foreground hover:text-indigo-600 border-r border-border rounded-r-none pr-3">
+                                    <Settings2 className="h-4 w-4" />
+                                </Button>
+                            )}
+                            <Button 
+                                variant="default" 
+                                className={cn(
+                                    "bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm",
+                                    canEdit ? "rounded-l-none" : ""
+                                )} 
+                                onClick={() => downloadPDF(pdfSettings)}
+                            >
                                 <Download className="mr-2 h-4 w-4" />
                                 PDF
                             </Button>

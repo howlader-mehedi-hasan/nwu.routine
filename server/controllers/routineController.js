@@ -1,5 +1,6 @@
 const dbRepository = require('../repositories/dbRepository');
 const axios = require('axios'); // Will need to install axios if not present, or use fetch
+const { logActivity } = require('./auditLogController');
 
 const AI_SERVICE_URL = process.env.AI_SERVICE_URL || 'http://localhost:8000/optimize';
 
@@ -22,6 +23,8 @@ exports.addRoutineEntry = (req, res) => {
         };
 
         const created = dbRepository.create('routine_schedule', newEntry);
+
+        logActivity(req.user?.id || 'System', req.user?.username || 'Guest', 'Add Routine Entry', `Added class: ${day} ${time} for batch ${batch_id}.`);
 
         res.json({ message: 'Class added successfully', entry: created });
 
@@ -49,6 +52,8 @@ exports.updateRoutineEntry = (req, res) => {
             return res.status(404).json({ message: 'Class not found' });
         }
 
+        logActivity(req.user.id, req.user.username, 'Update Routine Entry', `Updated class entry ${id}.`);
+
         res.json({ message: 'Class updated successfully', entry: updatedEntry });
     } catch (error) {
         console.error("Error updating class:", error.message);
@@ -64,6 +69,8 @@ exports.deleteRoutineEntry = (req, res) => {
         if (!success) {
             return res.status(404).json({ message: 'Class not found' });
         }
+
+        logActivity(req.user.id, req.user.username, 'Delete Routine Entry', `Deleted class entry ${id}.`);
 
         res.json({ message: 'Class deleted successfully' });
     } catch (error) {
@@ -81,6 +88,9 @@ exports.clearRoutine = (req, res) => {
     try {
         // Clear the collection using direct internal collection write
         dbRepository._writeCollection('routine_schedule', []);
+        
+        logActivity(req.user.id, req.user.username, 'Clear Routine', `Cleared all routine entries.`);
+
         res.json({ message: 'Routine cleared successfully' });
     } catch (error) {
         console.error("Error clearing routine:", error.message);
@@ -125,6 +135,9 @@ exports.importRoutine = (req, res) => {
 
         // Overwrite the collection
         dbRepository._writeCollection('routine_schedule', routineData);
+
+        logActivity(req.user.id, req.user.username, 'Import Routine', `Imported ${routineData.length} routine entries from backup.`);
+
         res.json({ message: 'Routine logic restored successfully.', count: routineData.length });
 
     } catch (error) {

@@ -48,4 +48,6 @@ export const importRoutine = (data) => api.post('/routine/import', data);
 export const getSettings = () => api.get('/settings');
 export const updateSettings = (data) => api.put('/settings', data);
 
+export const getAuditLogs = () => api.get('/audit-logs');
+
 export default api;

@@ -11,13 +11,39 @@ import { cn } from '../lib/utils';
 import SettingsModal from './SettingsModal';
 import { useAuth } from '../contexts/AuthContext';
 
+const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+const operatingDays = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+
 const RoutineView = ({ overtimeVisibility, setOvertimeVisibility }) => {
     const { user, hasPermission } = useAuth();
     const canEdit = hasPermission('edit_routine');
+
+    const getDefaultDay = () => {
+        const now = new Date();
+        const hour = now.getHours();
+        const dayIndex = now.getDay(); // 0 is Sunday, 1 is Monday, ..., 6 is Saturday
+        
+        let targetDayIndex = dayIndex;
+        
+        // If it's after 5 PM (17:00), we look for the next day
+        if (hour >= 17) {
+            targetDayIndex = (dayIndex + 1) % 7;
+        }
+
+        let dayName = days[targetDayIndex];
+
+        // If today/target day is Sunday, default to Monday
+        if (dayName === "Sunday") {
+            return "Monday";
+        }
+
+        return dayName;
+    };
+
     const [routine, setRoutine] = useState([]);
     const [metadata, setMetadata] = useState({ rooms: [], faculty: [], batches: [], courses: [] });
     const [loading, setLoading] = useState(true);
-    const [selectedDay, setSelectedDay] = useState('Monday');
+    const [selectedDay, setSelectedDay] = useState(getDefaultDay());
     const [viewMode, setViewMode] = useState('master'); // 'master', 'section', 'batch', 'faculty'
     const [selectedBatchId, setSelectedBatchId] = useState(''); // For Section View
     const [selectedFacultyId, setSelectedFacultyId] = useState(''); // For Faculty View
@@ -270,11 +296,11 @@ const RoutineView = ({ overtimeVisibility, setOvertimeVisibility }) => {
     const labSlots = currentDayConfig.lab_slots;
     const slotMapping = currentDayConfig.slot_mapping;
 
-    const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+    // const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
-    // Dynamic slots based on view
+    // Dynamic slots based on view: Use full institutional slots for weekly view
     const currentTheorySlots = (viewMode === 'section' || viewMode === 'faculty')
-        ? theorySlots
+        ? (scheduleSettings.general?.theory_slots || [])
         : (overtimeVisibility[selectedDay] ? theorySlots : theorySlots.slice(0, 6));
 
     const renderRawCell = (batchId, timeSlot, currentDay) => {
@@ -417,7 +443,8 @@ const RoutineView = ({ overtimeVisibility, setOvertimeVisibility }) => {
     // Helper to get cell data for Section/Faculty views (Row = Day)
     const getWeeklyCellData = (day, timeSlot) => {
         let specificDayRoutine = routine.filter(r => r.day === day);
-        const labSlot = slotMapping[timeSlot];
+        const config = getConfigForDay(day);
+        const labSlot = config.slot_mapping[timeSlot];
 
         let classInfos = [];
 
@@ -486,12 +513,13 @@ const RoutineView = ({ overtimeVisibility, setOvertimeVisibility }) => {
                 continue;
             }
 
+            const config = getConfigForDay(day);
             const currentData = getWeeklyCellData(day, currentSlot);
 
             let colSpan = 1;
             if (currentData && currentData.length > 0) {
                 const firstEntry = currentData[0];
-                if (firstEntry.isLab && labSlots.includes(firstEntry.originalTime)) {
+                if (firstEntry.isLab && config.lab_slots.includes(firstEntry.originalTime)) {
                     colSpan = 2;
                 }
             }

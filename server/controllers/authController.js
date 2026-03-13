@@ -2,6 +2,7 @@ const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const dbRepository = require('../repositories/dbRepository');
 const { encryptText, decryptText } = require('../utils/encryption');
+const { logActivity } = require('./auditLogController');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'nwu-routine-secret-key-super-secure';
 
@@ -60,6 +61,7 @@ exports.register = async (req, res) => {
 
         // Don't send token if pending
         if (status === 'pending') {
+            logActivity('Guest', username, 'Registration Request', `User ${username} requested to create an account as ${requestedRole}.`);
             return res.status(201).json({ message: 'Registration successful. Waiting for Super Admin approval.', status: 'pending' });
         }
 
@@ -93,6 +95,8 @@ exports.login = async (req, res) => {
 
         const token = jwt.sign({ id: user.id, role: user.role, status: user.status }, JWT_SECRET, { expiresIn: '24h' });
         const { password: _, ...userWithoutPass } = user;
+
+        logActivity(user.id, user.fullName || user.username, 'Login', `User ${user.username} logged in.`);
 
         res.json({ token, user: userWithoutPass });
     } catch (error) {
@@ -207,6 +211,8 @@ exports.createUser = async (req, res) => {
         const created = dbRepository.create('users', newUser);
         const { password: _, ...userWithoutPass } = created;
         
+        logActivity(req.user.id, req.user.username, 'User Created', `Created new user ${userWithoutPass.username} with role ${userWithoutPass.role}.`);
+
         res.status(201).json(userWithoutPass);
     } catch (error) {
         res.status(500).json({ message: 'Server error', error: error.message });
