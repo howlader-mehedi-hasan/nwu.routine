@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { toast } from 'react-hot-toast';
-import { Check, X, Shield, Clock, Plus, Edit, Key, Eye, EyeOff } from 'lucide-react';
+import { Check, X, Shield, Clock, Plus, Edit, Key, Eye, EyeOff, Trash2, Users } from 'lucide-react';
 
 export default function UserManagement() {
     const { api, user: currentUser } = useAuth();
@@ -12,6 +12,7 @@ export default function UserManagement() {
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
     const [selectedUser, setSelectedUser] = useState(null);
+    const [selectedUserIds, setSelectedUserIds] = useState([]);
 
     const [formData, setFormData] = useState({
         username: '', email: '', password: '', role: 'Student', status: 'approved', fullName: '', mobileNumber: '', permissions: [], section: ''
@@ -113,6 +114,47 @@ export default function UserManagement() {
             setSelectedUser(null);
         } catch (error) {
             toast.error(error.response?.data?.message || 'Failed to change password');
+        }
+    };
+
+    const handleDeleteUser = async (userId, username) => {
+        if (!window.confirm(`Are you sure you want to delete user "${username}"? This action cannot be undone.`)) return;
+        try {
+            await api.delete(`/auth/users/${userId}`);
+            toast.success('User deleted successfully');
+            loadUsersAndBatches();
+            // Remove from selection if it was selected
+            setSelectedUserIds(prev => prev.filter(id => id !== userId));
+        } catch (error) {
+            toast.error(error.response?.data?.message || 'Failed to delete user');
+        }
+    };
+
+    const handleBulkDelete = async () => {
+        if (!window.confirm(`Are you sure you want to delete ${selectedUserIds.length} selected users? This action cannot be undone.`)) return;
+        try {
+            await api.post('/auth/users/bulk-delete', { ids: selectedUserIds });
+            toast.success(`${selectedUserIds.length} users deleted successfully`);
+            setSelectedUserIds([]);
+            loadUsersAndBatches();
+        } catch (error) {
+            toast.error(error.response?.data?.message || 'Failed to delete users');
+        }
+    };
+
+    const toggleUserSelection = (userId) => {
+        setSelectedUserIds(prev => 
+            prev.includes(userId) 
+                ? prev.filter(id => id !== userId) 
+                : [...prev, userId]
+        );
+    };
+
+    const toggleSelectAll = (usersToSelect) => {
+        if (selectedUserIds.length === usersToSelect.length) {
+            setSelectedUserIds([]);
+        } else {
+            setSelectedUserIds(usersToSelect.map(u => u.id));
         }
     };
 
@@ -265,11 +307,34 @@ export default function UserManagement() {
 
             {/* Active Users */}
             <div className="bg-card rounded-lg border shadow-sm p-4 mt-8">
-                <h3 className="text-xl font-semibold mb-4 border-b pb-2">All Active Users</h3>
+                <div className="flex justify-between items-center mb-4 border-b pb-2">
+                    <h3 className="text-xl font-semibold">All Active Users</h3>
+                    {selectedUserIds.length > 0 && (
+                        <div className="flex items-center gap-3 animate-in fade-in zoom-in duration-200">
+                            <span className="text-sm font-medium text-muted-foreground bg-muted px-2 py-1 rounded-md border shadow-sm">
+                                {selectedUserIds.length} users selected
+                            </span>
+                            <button
+                                onClick={handleBulkDelete}
+                                className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded-lg text-sm font-medium transition-all shadow-sm hover:scale-105"
+                            >
+                                <Trash2 className="w-4 h-4" /> Delete Selected
+                            </button>
+                        </div>
+                    )}
+                </div>
                 <div className="overflow-x-auto">
                     <table className="w-full text-left text-sm">
                         <thead className="bg-muted text-muted-foreground uppercase">
                             <tr>
+                                <th className="px-4 py-3 border-b w-10">
+                                    <input 
+                                        type="checkbox" 
+                                        className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-600 h-4 w-4 transition-all"
+                                        checked={approvedUsers.length > 0 && selectedUserIds.length === approvedUsers.filter(u => u.role !== 'Super Admin').length}
+                                        onChange={() => toggleSelectAll(approvedUsers.filter(u => u.role !== 'Super Admin'))}
+                                    />
+                                </th>
                                 <th className="px-4 py-3 border-b">Username / Name</th>
                                 <th className="px-4 py-3 border-b">Contact</th>
                                 <th className="px-4 py-3 border-b">Status</th>
@@ -282,7 +347,17 @@ export default function UserManagement() {
                         </thead>
                         <tbody className="divide-y">
                             {approvedUsers.map(user => (
-                                <tr key={user.id} className="hover:bg-muted/30 transition">
+                                <tr key={user.id} className={`hover:bg-muted/30 transition-colors ${selectedUserIds.includes(user.id) ? 'bg-indigo-50/50 dark:bg-indigo-900/10' : ''}`}>
+                                    <td className="px-4 py-3">
+                                        {user.role !== 'Super Admin' && (
+                                            <input 
+                                                type="checkbox" 
+                                                className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-600 h-4 w-4 transition-all"
+                                                checked={selectedUserIds.includes(user.id)}
+                                                onChange={() => toggleUserSelection(user.id)}
+                                            />
+                                        )}
+                                    </td>
                                     <td className="px-4 py-3 font-medium">
                                         <div>{user.username}</div>
                                         <div className="text-xs text-muted-foreground mt-0.5">{user.fullName}</div>
@@ -325,6 +400,15 @@ export default function UserManagement() {
                                                     title="Change Password"
                                                 >
                                                     <Key className="w-4 h-4" />
+                                                </button>
+                                            )}
+                                            {user.role !== 'Super Admin' && (
+                                                <button
+                                                    onClick={() => handleDeleteUser(user.id, user.username)}
+                                                    className="p-1.5 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 rounded transition-colors"
+                                                    title="Delete User"
+                                                >
+                                                    <Trash2 className="w-4 h-4" />
                                                 </button>
                                             )}
                                         </div>

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Download, X, Settings2, FileText, Type, Layout, Plus } from 'lucide-react';
+import { Download, X, Settings2, FileText, Type, Layout, Plus, Save, Upload } from 'lucide-react';
+import toast from 'react-hot-toast';
 import { Button } from './ui/Button';
 
 const PdfDownloadModal = ({ isOpen, onClose, initialSettings, onSave }) => {
@@ -112,6 +113,40 @@ const PdfDownloadModal = ({ isOpen, onClose, initialSettings, onSave }) => {
             img.src = event.target.result;
         };
         reader.readAsDataURL(file);
+    };
+
+    const handleExport = () => {
+        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(settings, null, 2));
+        const downloadAnchorNode = document.createElement('a');
+        downloadAnchorNode.setAttribute("href", dataStr);
+        downloadAnchorNode.setAttribute("download", `pdf_settings_backup_${new Date().toISOString().split('T')[0]}.json`);
+        document.body.appendChild(downloadAnchorNode);
+        downloadAnchorNode.click();
+        downloadAnchorNode.remove();
+        toast.success("PDF settings exported!");
+    };
+
+    const handleImport = (event) => {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            try {
+                const json = JSON.parse(e.target.result);
+                // Basic validation
+                if (json.universityName || json.fileName) {
+                    setSettings({ ...defaultSettings, ...json });
+                    toast.success("PDF settings loaded! Click 'Save' to apply.");
+                } else {
+                    toast.error("Invalid PDF settings file.");
+                }
+            } catch (err) {
+                toast.error("Failed to read the backup file.");
+            }
+        };
+        reader.readAsText(file);
+        event.target.value = '';
     };
 
     return (
@@ -260,6 +295,18 @@ const PdfDownloadModal = ({ isOpen, onClose, initialSettings, onSave }) => {
                                     <option value="helvetica">Helvetica</option>
                                     <option value="times">Times New Roman</option>
                                     <option value="courier">Courier</option>
+                                </select>
+                            </div>
+                            <div className="col-span-2 md:col-span-1">
+                                <label className="block text-sm font-medium mb-1.5">Orientation</label>
+                                <select
+                                    name="orientation"
+                                    value={settings.orientation || "l"}
+                                    onChange={handleChange}
+                                    className="w-full p-2.5 rounded-lg border border-input bg-background text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+                                >
+                                    <option value="l">Landscape</option>
+                                    <option value="p">Portrait</option>
                                 </select>
                             </div>
                             <div className="col-span-1">
@@ -513,14 +560,33 @@ const PdfDownloadModal = ({ isOpen, onClose, initialSettings, onSave }) => {
 
                 </div>
 
-                <div className="flex justify-end items-center gap-3 p-5 border-t border-border bg-muted/10">
-                    <Button variant="outline" onClick={onClose} className="px-5">
-                        Cancel
-                    </Button>
-                    <Button onClick={handleSave} className="px-6 bg-indigo-600 hover:bg-indigo-700 text-white shadow-md">
-                        <Settings2 className="mr-2 h-4 w-4" />
-                        Save Settings
-                    </Button>
+                <div className="flex flex-wrap justify-between items-center gap-3 p-5 border-t border-border bg-muted/10">
+                    <div className="flex items-center gap-2">
+                        <Button variant="ghost" size="sm" onClick={handleExport} className="text-muted-foreground hover:text-indigo-600 px-2 h-8">
+                            <Download className="h-3.5 w-3.5 mr-1.5" /> Backup
+                        </Button>
+                        <div className="relative">
+                            <Button variant="ghost" size="sm" onClick={() => document.getElementById('pdf-restore-input').click()} className="text-muted-foreground hover:text-emerald-600 px-2 h-8">
+                                <Upload className="h-3.5 w-3.5 mr-1.5" /> Restore
+                            </Button>
+                            <input
+                                id="pdf-restore-input"
+                                type="file"
+                                accept=".json"
+                                className="hidden"
+                                onChange={handleImport}
+                            />
+                        </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                        <Button variant="outline" onClick={onClose} className="px-5">
+                            Cancel
+                        </Button>
+                        <Button onClick={handleSave} className="px-6 bg-indigo-600 hover:bg-indigo-700 text-white shadow-md">
+                            <Save className="mr-2 h-4 w-4" />
+                            Save Settings
+                        </Button>
+                    </div>
                 </div>
             </div>
         </div>

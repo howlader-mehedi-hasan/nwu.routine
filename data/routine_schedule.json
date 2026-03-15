@@ -1,19 +1,10 @@
 [
   {
-    "id": "1773000197274",
-    "day": "Monday",
-    "time": "08:00-09:15",
-    "batch_id": 401,
-    "course_id": 254,
-    "faculty_id": 147,
-    "room_id": 322
-  },
-  {
     "id": "1773000197275",
     "day": "Monday",
     "time": "09:15-10:30",
     "batch_id": 401,
-    "course_id": 243,
+    "course_id": 201,
     "faculty_id": 111,
     "room_id": 316
   },
@@ -5056,5 +5047,32 @@
     "course_id": 255,
     "faculty_id": 102,
     "room_id": 317
+  },
+  {
+    "id": "1773495667544",
+    "day": "Monday",
+    "time": "08:00-09:15",
+    "batch_id": 401,
+    "course_id": 201,
+    "faculty_id": 101,
+    "room_id": 302
+  },
+  {
+    "id": "1773495913348",
+    "day": "Thursday",
+    "time": "10:45-12:00",
+    "batch_id": 405,
+    "course_id": 217,
+    "faculty_id": 115,
+    "room_id": 301
+  },
+  {
+    "id": "1773578893078",
+    "day": "Tuesday",
+    "time": "04:30-07:00",
+    "batch_id": 403,
+    "course_id": 210,
+    "faculty_id": 147,
+    "room_id": 321
   }
 ]

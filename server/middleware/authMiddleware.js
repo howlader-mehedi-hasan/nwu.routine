@@ -1,6 +1,7 @@
 const jwt = require('jsonwebtoken');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'nwu-routine-secret-key-super-secure';
+const dbRepository = require('../repositories/dbRepository');
 
 exports.protect = (req, res, next) => {
     try {
@@ -16,7 +17,17 @@ exports.protect = (req, res, next) => {
         }
 
         const decoded = jwt.verify(token, JWT_SECRET);
-        req.user = decoded;
+        
+        // Fetch fresh user to ensure we have fullName and other details
+        const users = dbRepository.getAll('users');
+        const user = users.find(u => u.id === decoded.id);
+        
+        if (!user) {
+            return res.status(401).json({ message: 'User no longer exists' });
+        }
+
+        const { password: _, encryptedPassword: __, ...userWithoutPass } = user;
+        req.user = userWithoutPass;
         next();
     } catch (error) {
         return res.status(401).json({ message: 'Not authorized to access this route' });

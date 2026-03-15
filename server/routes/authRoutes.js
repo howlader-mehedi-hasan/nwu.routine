@@ -1,5 +1,5 @@
 const express = require('express');
-const { register, login, getMe, getAllUsers, updateUserStatus, createUser, updateUser, changeUserPassword, requestNameChange, resolveNameChange } = require('../controllers/authController');
+const { register, login, getMe, getAllUsers, updateUserStatus, createUser, updateUser, changeUserPassword, requestNameChange, resolveNameChange, deleteUser, bulkDeleteUsers } = require('../controllers/authController');
 const { protect, requirePermission } = require('../middleware/authMiddleware');
 
 const router = express.Router();
@@ -16,5 +16,7 @@ router.post('/users/:id/name-change', protect, requestNameChange);
 router.post('/users/:id/name-change-resolve', protect, requirePermission('assign_permissions'), resolveNameChange);
 router.put('/users/:id/password', protect, changeUserPassword);
 router.put('/users/:id/status', protect, requirePermission('assign_permissions'), updateUserStatus);
+router.delete('/users/:id', protect, requirePermission('assign_permissions'), deleteUser);
+router.post('/users/bulk-delete', protect, requirePermission('assign_permissions'), bulkDeleteUsers);
 
 module.exports = router;

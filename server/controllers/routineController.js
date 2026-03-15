@@ -4,6 +4,26 @@ const { logActivity } = require('./auditLogController');
 
 const AI_SERVICE_URL = process.env.AI_SERVICE_URL || 'http://localhost:8000/optimize';
 
+// Helper to get human-readable names for IDs
+const getEntryDetails = (entry) => {
+    const courses = dbRepository.getAll('courses');
+    const batches = dbRepository.getAll('batches');
+    const faculties = dbRepository.getAll('faculty');
+    const rooms = dbRepository.getAll('rooms');
+
+    const course = courses.find(c => c.id == entry.course_id);
+    const batch = batches.find(b => b.id == entry.batch_id);
+    const faculty = faculties.find(f => f.id == entry.faculty_id);
+    const room = entry.room_id ? rooms.find(r => r.id == entry.room_id) : null;
+
+    return {
+        course: course ? `${course.name} (${course.code})` : 'Unknown Course',
+        batch: batch ? `${batch.name} (Section ${batch.section})` : 'Unknown Batch',
+        faculty: faculty ? faculty.name : 'Unknown Faculty',
+        room: room ? `Room ${room.room_number}` : 'No Room'
+    };
+};
+
 exports.addRoutineEntry = (req, res) => {
     try {
         const { day, time, batch_id, course_id, faculty_id, room_id } = req.body;
@@ -13,7 +33,7 @@ exports.addRoutineEntry = (req, res) => {
         }
 
         const newEntry = {
-            id: Date.now().toString(), // Simple unique ID
+            id: Date.now().toString(),
             day,
             time,
             batch_id: parseInt(batch_id),
@@ -23,8 +43,14 @@ exports.addRoutineEntry = (req, res) => {
         };
 
         const created = dbRepository.create('routine_schedule', newEntry);
+        const details = getEntryDetails(created);
 
-        logActivity(req.user?.id || 'System', req.user?.username || 'Guest', 'Add Routine Entry', `Added class: ${day} ${time} for batch ${batch_id}.`);
+        logActivity(
+            req.user?.id || 'System', 
+            req.user?.fullName || req.user?.username || 'Guest', 
+            'Add Routine Entry', 
+            `Added ${details.course} for ${details.batch} by ${details.faculty} in ${details.room} at ${time} on ${day}.`
+        );
 
         res.json({ message: 'Class added successfully', entry: created });
 
@@ -39,6 +65,13 @@ exports.updateRoutineEntry = (req, res) => {
         const { id } = req.params;
         const updates = req.body;
 
+        const oldEntry = dbRepository.getById('routine_schedule', id);
+        if (!oldEntry) return res.status(404).json({ message: 'Class not found' });
+        
+        const oldDetails = getEntryDetails(oldEntry);
+        const oldTime = oldEntry.time;
+        const oldDay = oldEntry.day;
+
         const parsedUpdates = { ...updates };
         if (updates.batch_id) parsedUpdates.batch_id = parseInt(updates.batch_id);
         if (updates.course_id) parsedUpdates.course_id = parseInt(updates.course_id);
@@ -47,12 +80,25 @@ exports.updateRoutineEntry = (req, res) => {
         else if (updates.room_id === '' || updates.room_id === null) parsedUpdates.room_id = null;
 
         const updatedEntry = dbRepository.update('routine_schedule', id, parsedUpdates);
+        const newDetails = getEntryDetails(updatedEntry);
 
-        if (!updatedEntry) {
-            return res.status(404).json({ message: 'Class not found' });
-        }
+        // Analyze changes
+        const changes = [];
+        if (oldEntry.course_id != updatedEntry.course_id) changes.push(`Course: ${oldDetails.course} -> ${newDetails.course}`);
+        if (oldEntry.batch_id != updatedEntry.batch_id) changes.push(`Batch: ${oldDetails.batch} -> ${newDetails.batch}`);
+        if (oldEntry.faculty_id != updatedEntry.faculty_id) changes.push(`Faculty: ${oldDetails.faculty} -> ${newDetails.faculty}`);
+        if (oldEntry.room_id != updatedEntry.room_id) changes.push(`Room: ${oldDetails.room} -> ${newDetails.room}`);
+        if (oldTime != updatedEntry.time) changes.push(`Time: ${oldTime} -> ${updatedEntry.time}`);
+        if (oldDay != updatedEntry.day) changes.push(`Day: ${oldDay} -> ${updatedEntry.day}`);
 
-        logActivity(req.user.id, req.user.username, 'Update Routine Entry', `Updated class entry ${id}.`);
+        const changeSummary = changes.length > 0 ? changes.join(', ') : 'No data changes detected (meta-update only).';
+
+        logActivity(
+            req.user.id, 
+            req.user.fullName || req.user.username, 
+            'Update Routine Entry', 
+            `Updated entry ${id}: ${changeSummary}`
+        );
 
         res.json({ message: 'Class updated successfully', entry: updatedEntry });
     } catch (error) {
@@ -64,13 +110,22 @@ exports.updateRoutineEntry = (req, res) => {
 exports.deleteRoutineEntry = (req, res) => {
     try {
         const { id } = req.params;
+        const entryToDelete = dbRepository.getById('routine_schedule', id);
+        if (!entryToDelete) return res.status(404).json({ message: 'Class not found' });
+
+        const details = getEntryDetails(entryToDelete);
         const success = dbRepository.delete('routine_schedule', id);
 
         if (!success) {
             return res.status(404).json({ message: 'Class not found' });
         }
 
-        logActivity(req.user.id, req.user.username, 'Delete Routine Entry', `Deleted class entry ${id}.`);
+        logActivity(
+            req.user.id, 
+            req.user.fullName || req.user.username, 
+            'Delete Routine Entry', 
+            `Deleted ${details.course} for ${details.batch} by ${details.faculty} at ${entryToDelete.time} on ${entryToDelete.day}.`
+        );
 
         res.json({ message: 'Class deleted successfully' });
     } catch (error) {
@@ -89,7 +144,7 @@ exports.clearRoutine = (req, res) => {
         // Clear the collection using direct internal collection write
         dbRepository._writeCollection('routine_schedule', []);
         
-        logActivity(req.user.id, req.user.username, 'Clear Routine', `Cleared all routine entries.`);
+        logActivity(req.user.id, req.user.fullName || req.user.username, 'Clear Routine', `Cleared all routine entries.`);
 
         res.json({ message: 'Routine cleared successfully' });
     } catch (error) {
@@ -136,7 +191,7 @@ exports.importRoutine = (req, res) => {
         // Overwrite the collection
         dbRepository._writeCollection('routine_schedule', routineData);
 
-        logActivity(req.user.id, req.user.username, 'Import Routine', `Imported ${routineData.length} routine entries from backup.`);
+        logActivity(req.user.id, req.user.fullName || req.user.username, 'Import Routine', `Imported ${routineData.length} routine entries from backup.`);
 
         res.json({ message: 'Routine logic restored successfully.', count: routineData.length });
 

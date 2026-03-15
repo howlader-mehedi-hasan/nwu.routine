@@ -3,19 +3,20 @@
     "id": "1771855987673",
     "username": "hmh",
     "email": "hmh.cse@gmail.com",
-    "password": "$2b$10$YsAq5LGEpYK2rk0kgO4ZKu4Fb59ic22vxj5Bh4W0skAPNNwbe.S9C",
+    "password": "$2b$10$v3fMl.ObkOspYOmhnFcoI.KIg/wbtkLWQuX2JwCZajFYSJBcmS3Cu",
     "role": "Super Admin",
     "status": "approved",
     "permissions": [],
     "fullName": "Howlader Mehedi Hasan",
     "mobileNumber": "01648292385",
-    "pendingFullName": null
+    "pendingFullName": null,
+    "encryptedPassword": "0cf03fa01dc88aacb54d4bfe254ccb4c:239f45b171b6c4b1e150c0e7dfd2c47e"
   },
   {
     "id": "1771856072586",
     "username": "js",
-    "email": "jasiasultana21@gmail.com",
-    "password": "$2b$10$AEJJLhA8fQ3OhM0V3khxWutHsODw.0xgjthb6TOqDNgBRepvstqM.",
+    "email": "jasiasultana@gmail.com",
+    "password": "$2b$10$v3fMl.ObkOspYOmhnFcoI.KIg/wbtkLWQuX2JwCZajFYSJBcmS3Cu",
     "role": "Admin",
     "status": "approved",
     "permissions": [
@@ -28,7 +29,9 @@
       "manage_batches"
     ],
     "fullName": "",
-    "mobileNumber": ""
+    "mobileNumber": "",
+    "encryptedPassword": "0cf03fa01dc88aacb54d4bfe254ccb4c:239f45b171b6c4b1e150c0e7dfd2c47e",
+    "section": "401"
   },
   {
     "id": "1772049728687",
@@ -52,10 +55,11 @@
     "id": "1772052564941",
     "username": "admin",
     "email": "admin@gmail.com",
-    "password": "$2b$10$.0vyBV29lzsvn/X0fVFpWuy/KmEmruJ7HgvlGZEcjMsvUhiH3F80m",
+    "password": "$2b$10$v3fMl.ObkOspYOmhnFcoI.KIg/wbtkLWQuX2JwCZajFYSJBcmS3Cu",
     "role": "Super Admin",
     "status": "approved",
-    "permissions": []
+    "permissions": [],
+    "encryptedPassword": "0cf03fa01dc88aacb54d4bfe254ccb4c:239f45b171b6c4b1e150c0e7dfd2c47e"
   },
   {
     "id": "1772052767374",
@@ -157,6 +161,34 @@
     "permissions": [],
     "fullName": "c",
     "mobileNumber": "1",
+    "section": "401",
+    "facultyId": "101"
+  },
+  {
+    "id": "1773430330149",
+    "username": "testuser",
+    "email": "test@test.com",
+    "password": "$2b$10$.Sj88xHBOw46SJyY7L7lXuFlIqkTBIAZeI//vlsTqNCfbTLwPK912",
+    "encryptedPassword": "cf269a954125d925f6298fe6f00e0e94:c55324208aeb10f1f73f1e2000e8bdef",
+    "role": "Student",
+    "status": "approved",
+    "permissions": [],
+    "fullName": "Test User",
+    "mobileNumber": "1234567890",
+    "section": "",
+    "facultyId": null
+  },
+  {
+    "id": "1773490417040",
+    "username": "hmh2",
+    "email": "a@h",
+    "password": "$2b$10$LY4aQcVHbIsM6QDBYWeRE.10A0LQEWxlJjxu4vGd67CPv76RfUeGG",
+    "encryptedPassword": "b2a27b6526daecf103251e9e1a5380d3:fa38f718cfe8ea9002ca775c2981dbbb",
+    "role": "Admin",
+    "status": "approved",
+    "permissions": [],
+    "fullName": "m",
+    "mobileNumber": "000",
     "section": "401",
     "facultyId": "101"
   }

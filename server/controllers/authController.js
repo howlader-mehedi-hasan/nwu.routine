@@ -211,7 +211,7 @@ exports.createUser = async (req, res) => {
         const created = dbRepository.create('users', newUser);
         const { password: _, ...userWithoutPass } = created;
         
-        logActivity(req.user.id, req.user.username, 'User Created', `Created new user ${userWithoutPass.username} with role ${userWithoutPass.role}.`);
+        logActivity(req.user.id, req.user.fullName || req.user.username, 'User Created', `Created new user ${userWithoutPass.username} with role ${userWithoutPass.role}.`);
 
         res.status(201).json(userWithoutPass);
     } catch (error) {
@@ -358,6 +358,74 @@ exports.resolveNameChange = (req, res) => {
         
         saveUsers(users);
         res.json({ message: `Name change ${action}d successfully` });
+    } catch (error) {
+        res.status(500).json({ message: 'Server error', error: error.message });
+    }
+};
+
+exports.deleteUser = (req, res) => {
+    try {
+        const { id } = req.params;
+        const users = getUsers();
+        const index = users.findIndex(u => u.id === id);
+
+        if (index === -1) return res.status(404).json({ message: 'User not found' });
+
+        // Safety checks
+        const targetUser = users[index];
+        if (targetUser.role === 'Super Admin') {
+            return res.status(403).json({ message: 'Cannot delete a Super Admin account' });
+        }
+
+        // Only Admin or Super Admin can delete
+        if (req.user.role !== 'Super Admin' && req.user.role !== 'Admin') {
+            return res.status(403).json({ message: 'Permission denied. Only Admins can delete users.' });
+        }
+
+        const username = targetUser.username;
+        users.splice(index, 1);
+        saveUsers(users);
+
+        logActivity(req.user.id, req.user.fullName || req.user.username, 'User Deleted', `Deleted user ${username}.`);
+
+        res.json({ message: 'User deleted successfully' });
+    } catch (error) {
+        res.status(500).json({ message: 'Server error', error: error.message });
+    }
+};
+
+exports.bulkDeleteUsers = (req, res) => {
+    try {
+        const { ids } = req.body;
+        if (!ids || !Array.isArray(ids)) {
+            return res.status(400).json({ message: 'Required array of IDs for bulk deletion' });
+        }
+
+        let users = getUsers();
+        const initialCount = users.length;
+        
+        // Filter out Super Admins from deletion list for safety
+        const safeIds = ids.filter(id => {
+            const user = users.find(u => u.id === id);
+            return user && user.role !== 'Super Admin';
+        });
+
+        if (safeIds.length === 0 && ids.length > 0) {
+            return res.status(403).json({ message: 'No deletable users found in selection (Super Admins are protected)' });
+        }
+
+        // Only Admin or Super Admin can delete
+        if (req.user.role !== 'Super Admin' && req.user.role !== 'Admin') {
+            return res.status(403).json({ message: 'Permission denied. Only Admins can delete users.' });
+        }
+
+        users = users.filter(u => !safeIds.includes(u.id));
+        saveUsers(users);
+
+        const deletedCount = initialCount - users.length;
+        logActivity(req.user.id, req.user.fullName || req.user.username, 'Bulk User Deletion', `Deleted ${deletedCount} users.`);
+
+        res.json({ message: `Successfully deleted ${deletedCount} users.`, deletedCount });
     } catch (error) {
         res.status(500).json({ message: 'Server error', error: error.message });
     }

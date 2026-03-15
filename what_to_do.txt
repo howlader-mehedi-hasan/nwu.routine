@@ -168,3 +168,12 @@ Frontend Registration: Run the application locally and navigate to the registrat
 Backend Storage: Submit a registration request as a Faculty. Upon approval (or using Mock data), verify that the 
 users.json
  backend file successfully stores the selected facultyId.
+
+
+for downloadable pdf of routine view
+for 2 alter course
+first line contain first course code (CSE-2204)
+second line contain first course's faculty and room number seperated by underscore (MRZI_302)
+third line contain ALT text (-alt-)
+forth line contain second course code (HUM-3204)
+fifth line contain second course's faculty and room number seperated by underscore (ANK_303)

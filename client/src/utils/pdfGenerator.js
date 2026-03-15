@@ -582,32 +582,33 @@ export const generateWeeklyRoutinePDF = (pdfSettings, allFaculty = [], tableSele
     }
 };
 
-export const generateRoutineViewPDF = (title, subtitle, tableColumn, tableRows) => {
+export const generateRoutineViewPDF = (title, subtitle, tableColumn, tableRows, pdfSettings = {}) => {
     try {
-        const doc = new jsPDF('l', 'mm', 'a3');
+        const orientation = pdfSettings.orientation || 'l';
+        const doc = new jsPDF(orientation, 'mm', 'a3');
         const pageWidth = doc.internal.pageSize.getWidth();
 
         // Apply Global Font Style
-        doc.setFont('helvetica');
+        doc.setFont(pdfSettings.fontStyle || 'helvetica');
 
         // 1. University Name
-        doc.setFontSize(18);
-        doc.setFont('helvetica', 'bold');
-        doc.text("North Western University", pageWidth / 2, 18, { align: "center" });
+        doc.setFontSize(pdfSettings.headerFontSize || 18);
+        doc.setFont(pdfSettings.fontStyle || 'helvetica', 'bold');
+        doc.text(pdfSettings.universityName || "North Western University", pageWidth / 2, 18, { align: "center" });
 
         // 2. Department Name
-        doc.setFontSize(14);
-        doc.setFont('helvetica', 'normal');
-        doc.text("Department of Computer Science and Engineering", pageWidth / 2, 26, { align: "center" });
+        doc.setFontSize(Math.max(10, (pdfSettings.headerFontSize || 18) - 4));
+        doc.setFont(pdfSettings.fontStyle || 'helvetica', 'normal');
+        doc.text(pdfSettings.departmentName || "Department of Computer Science and Engineering", pageWidth / 2, 26, { align: "center" });
 
         // 3. Title & Subtitle
-        doc.setFontSize(14);
-        doc.setFont('helvetica', 'bold');
-        doc.text(title || "Class Routine", pageWidth / 2, 36, { align: "center" });
+        doc.setFontSize(Math.max(10, (pdfSettings.headerFontSize || 18) - 4));
+        doc.setFont(pdfSettings.fontStyle || 'helvetica', 'bold');
+        doc.text(pdfSettings.semesterName || title || "Class Routine", pageWidth / 2, 36, { align: "center" });
 
         if (subtitle) {
-            doc.setFontSize(12);
-            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(Math.max(10, (pdfSettings.headerFontSize || 18) - 6));
+            doc.setFont(pdfSettings.fontStyle || 'helvetica', 'normal');
             doc.text(subtitle, pageWidth / 2, 44, { align: "center" });
         }
 
@@ -622,8 +623,8 @@ export const generateRoutineViewPDF = (title, subtitle, tableColumn, tableRows) 
             startY: subtitle ? 52 : 44,
             theme: 'grid',
             styles: {
-                font: 'helvetica',
-                fontSize: 10,
+                font: pdfSettings.fontStyle || 'helvetica',
+                fontSize: pdfSettings.fontSize || 10,
                 cellPadding: 3,
                 halign: 'center',
                 valign: 'middle',
@@ -635,23 +636,143 @@ export const generateRoutineViewPDF = (title, subtitle, tableColumn, tableRows) 
                 fillColor: [79, 70, 229], // Indigo 600
                 textColor: [255, 255, 255],
                 fontStyle: 'bold',
-                fontSize: 11
+                fontSize: (pdfSettings.fontSize || 10) + 1
             },
             columnStyles: { 0: { halign: 'left', fontStyle: 'bold', cellWidth: 40 } }
         });
 
-        // Add Footer Layout (Left, Center Pagination, Right)
+        // Add Bottom Signatures/Texts (Custom Fields)
+        let currentY = doc.lastAutoTable.finalY + 30;
+
+        if (pdfSettings.bottomSignatures && pdfSettings.bottomSignatures.length > 0) {
+            const sigs = pdfSettings.bottomSignatures.filter(s => s.trim() !== "");
+            if (sigs.length > 0) {
+                if (currentY > doc.internal.pageSize.getHeight() - 50) {
+                    doc.addPage();
+                    currentY = 30;
+                }
+                const step = pageWidth / (sigs.length + 1);
+                const bSigsFontSize = pdfSettings.bottomSignaturesFontSize || 10;
+                doc.setFontSize(bSigsFontSize);
+                doc.setFont(pdfSettings.fontStyle || "helvetica", "bold");
+
+                const columnWidth = step * 0.9;
+                sigs.forEach((sig, index) => {
+                    const xPos = step * (index + 1);
+                    const splitText = doc.splitTextToSize(sig, columnWidth);
+                    doc.text(splitText, xPos, currentY, { align: 'center' });
+                });
+            }
+        }
+
+        // Add Head of Department Signature Area
+        let headStartY = doc.lastAutoTable.finalY + 60;
+        if (pdfSettings.bottomSignatures && pdfSettings.bottomSignatures.length > 0) {
+            headStartY = currentY + 30;
+        }
+
+        const blockMarginRight = 50;
+        const blockWidth = 100;
+        const centerX = pageWidth - blockMarginRight - (blockWidth / 2);
+
+        if (headStartY + 30 > doc.internal.pageSize.getHeight() - 20) {
+            doc.addPage();
+            headStartY = 40;
+        }
+
+        if (pdfSettings.signatureImage) {
+            try {
+                doc.addImage(pdfSettings.signatureImage, 'PNG', centerX - 30, headStartY - 30, 60, 30);
+            } catch (e) {
+                console.error("Failed to render signature image:", e);
+            }
+        }
+
+        const sigFontSize = pdfSettings.signatureFontSize || 10;
+        doc.setFontSize(sigFontSize - 2);
+        doc.setFont("helvetica", "normal");
+        doc.text("_________________________", centerX, headStartY + 2, { align: "center" });
+
+        doc.setFont("helvetica", "bold");
+        doc.text("Signature", centerX, headStartY + 7, { align: "center" });
+
+        doc.setFontSize(sigFontSize);
+        doc.setFont(pdfSettings.fontStyle || "helvetica", "bold");
+
+        const lineHeight = sigFontSize * 0.45;
+        let identityY = headStartY + 15;
+
+        if (pdfSettings.headName) {
+            doc.text(pdfSettings.headName, centerX, identityY, { align: "center" });
+            identityY += lineHeight;
+        }
+        if (pdfSettings.headDesignation) {
+            doc.setFont(pdfSettings.fontStyle || "helvetica", "italic");
+            doc.text(pdfSettings.headDesignation, centerX, identityY, { align: "center" });
+            identityY += lineHeight;
+            doc.setFont(pdfSettings.fontStyle || "helvetica", "bold");
+        }
+        if (pdfSettings.headDepartmentName) {
+            doc.text(pdfSettings.headDepartmentName, centerX, identityY, { align: "center" });
+            identityY += lineHeight;
+        }
+        if (pdfSettings.headUniversityName) {
+            doc.text(pdfSettings.headUniversityName, centerX, identityY, { align: "center" });
+        }
+
+        // Add C.C. Block
+        if (pdfSettings.ccTitle || pdfSettings.ccText) {
+            const leftMargin = 50;
+            const titleBlockY = headStartY + 5;
+            doc.setFontSize(sigFontSize);
+            doc.setFont(pdfSettings.fontStyle || "helvetica", "normal");
+
+            if (pdfSettings.ccTitle) {
+                const titleWidth = doc.getTextWidth(pdfSettings.ccTitle);
+                doc.text(pdfSettings.ccTitle, leftMargin, titleBlockY);
+                doc.setLineWidth(0.5);
+                doc.line(leftMargin, titleBlockY + 1.5, leftMargin + titleWidth, titleBlockY + 1.5);
+            }
+
+            if (pdfSettings.ccText) {
+                let ccY = titleBlockY + lineHeight + 2;
+                const ccLines = pdfSettings.ccText.split('\n');
+                ccLines.forEach(line => {
+                    if (line.trim()) {
+                        doc.text(line.trim(), leftMargin + 10, ccY);
+                        ccY += lineHeight;
+                    }
+                });
+            }
+        }
+
+        // Add Footer Layout
         const pageCount = doc.internal.getNumberOfPages();
         for (let i = 1; i <= pageCount; i++) {
             doc.setPage(i);
-            doc.setFontSize(9);
-            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(8);
+            doc.setFont(pdfSettings.fontStyle || 'helvetica', 'normal');
+
             const yPos = doc.internal.pageSize.height - 10;
-            doc.text("Generated by NWU Smart Routine System", 14, yPos, { align: 'left' });
+
+            if (pdfSettings.footerLeftText) {
+                doc.text(pdfSettings.footerLeftText, 14, yPos, { align: 'left' });
+            } else {
+                doc.text("Generated by NWU Smart Routine System", 14, yPos, { align: 'left' });
+            }
+
             doc.text(`Page ${i} of ${pageCount}`, pageWidth / 2, yPos, { align: 'center' });
+
+            if (pdfSettings.footerRightText) {
+                doc.text(pdfSettings.footerRightText, pageWidth - 14, yPos, { align: 'right' });
+            }
         }
 
-        doc.save(`routine_${new Date().getTime()}.pdf`);
+        const finalFileName = pdfSettings.fileName ?
+            (pdfSettings.fileName.endsWith('.pdf') ? pdfSettings.fileName : `${pdfSettings.fileName}.pdf`)
+            : `routine_${new Date().getTime()}.pdf`;
+
+        doc.save(finalFileName);
         toast.success('PDF downloaded successfully!');
     } catch (error) {
         console.error("PDF generation failed:", error);
