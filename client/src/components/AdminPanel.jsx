@@ -249,7 +249,7 @@ const AdminPanel = () => {
     return (
         <div className="w-full px-6 mx-auto space-y-8 animate-in fade-in duration-500">
             <div>
-                <h2 className="text-3xl font-bold tracking-tight text-foreground">Admin Dashboard</h2>
+                <h2 className="text-3xl font-bold tracking-tight text-foreground">Database Admin Dashboard</h2>
                 <p className="text-muted-foreground mt-1">Manage system data, schedule, and configurations.</p>
             </div>
 

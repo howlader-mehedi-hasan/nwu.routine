@@ -6,9 +6,44 @@ const { logActivity } = require('./auditLogController');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'nwu-routine-secret-key-super-secure';
 
-// Helper to get users
-const getUsers = () => dbRepository.getAll('users') || [];
-const saveUsers = (users) => dbRepository._writeCollection('users', users);
+// Helper to map Supabase user to frontend user
+const mapUser = (user) => {
+    if (!user) return null;
+    return {
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        role: user.role,
+        status: user.status,
+        permissions: user.permissions || [],
+        fullName: user.full_name,
+        mobileNumber: user.mobile_number,
+        section: user.section,
+        facultyId: user.faculty_id,
+        createdAt: user.created_at,
+        updatedAt: user.updated_at
+    };
+};
+
+// Helper to map frontend data to Supabase columns
+const mapToSupabase = (data) => {
+    const mapped = {
+        username: data.username,
+        email: data.email,
+        password: data.password,
+        role: data.role,
+        status: data.status,
+        permissions: data.permissions,
+        full_name: data.fullName,
+        mobile_number: data.mobileNumber,
+        section: data.section,
+        faculty_id: data.facultyId,
+        encrypted_password: data.encryptedPassword
+    };
+    // Remove undefined
+    Object.keys(mapped).forEach(key => mapped[key] === undefined && delete mapped[key]);
+    return mapped;
+};
 
 exports.register = async (req, res) => {
     try {
@@ -18,7 +53,7 @@ exports.register = async (req, res) => {
             return res.status(400).json({ message: 'All fields (Username, Email, Password, Full Name, Mobile Number) are required for registration' });
         }
 
-        const users = getUsers();
+        const users = await dbRepository.getAll('users');
 
         if (users.find(u => u.username === username || (u.email && u.email === email))) {
             return res.status(400).json({ message: 'Username or Email already exists' });
@@ -28,16 +63,14 @@ exports.register = async (req, res) => {
         const encryptedPassword = encryptText(password);
 
         // Validate Requested Role against Settings
-        const settings = dbRepository.getSettings();
+        const settings = await dbRepository.getSettings();
         const allowedRoles = settings?.general?.registration_roles || ['Student', 'Faculty', 'CR/ACR'];
         
         let requestedRole = role || 'Student';
         if (!allowedRoles.includes(requestedRole)) {
-            // If they modify the frontend to send a role not allowed, downgrade them to the first allowed role, or Student
             requestedRole = allowedRoles.length > 0 ? allowedRoles[0] : 'Student';
         }
 
-        // Force first user to be superAdmin implicitly if none exist, else require approval
         const isFirstUser = users.length === 0;
         const actualRole = isFirstUser ? 'Super Admin' : requestedRole;
         const status = isFirstUser ? 'approved' : 'pending';
@@ -47,29 +80,28 @@ exports.register = async (req, res) => {
             username,
             email,
             password: hashedPassword,
-            encryptedPassword,
+            encrypted_password: encryptedPassword,
             role: actualRole,
-            status: status, // pending, approved, rejected
-            permissions: [], // specific permissions 
-            fullName: fullName || '',
-            mobileNumber: mobileNumber || '',
+            status: status,
+            permissions: [],
+            full_name: fullName || '',
+            mobile_number: mobileNumber || '',
             section: section || '',
-            facultyId: facultyId || null
+            faculty_id: facultyId || null
         };
 
-        const created = dbRepository.create('users', newUser);
+        const created = await dbRepository.create('users', newUser);
 
-        // Don't send token if pending
         if (status === 'pending') {
-            logActivity('Guest', username, 'Registration Request', `User ${username} requested to create an account as ${requestedRole}.`);
+            await logActivity('Guest', username, 'Registration Request', `User ${username} requested to create an account as ${requestedRole}.`);
             return res.status(201).json({ message: 'Registration successful. Waiting for Super Admin approval.', status: 'pending' });
         }
 
         const token = jwt.sign({ id: created.id, role: created.role, status: created.status }, JWT_SECRET, { expiresIn: '24h' });
-        const { password: _, ...userWithoutPass } = created;
-        res.status(201).json({ token, user: userWithoutPass });
+        res.status(201).json({ token, user: mapUser(created) });
 
     } catch (error) {
+        console.error("Registration Error:", error.message);
         res.status(500).json({ message: 'Server error', error: error.message });
     }
 };
@@ -77,7 +109,7 @@ exports.register = async (req, res) => {
 exports.login = async (req, res) => {
     try {
         const { username, password } = req.body;
-        const users = getUsers();
+        const users = await dbRepository.getAll('users');
 
         const user = users.find(u => u.username === username);
         if (!user) {
@@ -94,67 +126,60 @@ exports.login = async (req, res) => {
         }
 
         const token = jwt.sign({ id: user.id, role: user.role, status: user.status }, JWT_SECRET, { expiresIn: '24h' });
-        const { password: _, ...userWithoutPass } = user;
+        
+        await logActivity(user.id, user.full_name || user.username, 'Login', `User ${user.username} logged in.`);
 
-        logActivity(user.id, user.fullName || user.username, 'Login', `User ${user.username} logged in.`);
-
-        res.json({ token, user: userWithoutPass });
+        res.json({ token, user: mapUser(user) });
     } catch (error) {
+        console.error("Login Error:", error.message);
         res.status(500).json({ message: 'Server error', error: error.message });
     }
 };
 
-exports.getMe = (req, res) => {
+exports.getMe = async (req, res) => {
     try {
-        const users = getUsers();
-        const user = users.find(u => u.id === req.user.id);
+        const user = await dbRepository.getById('users', req.user.id);
         if (!user) return res.status(404).json({ message: 'User not found' });
 
-        const { password: _, ...userWithoutPass } = user;
-        res.json(userWithoutPass);
+        res.json(mapUser(user));
     } catch (error) {
         res.status(500).json({ message: 'Server error' });
     }
 };
 
-// Super Admin functionality
-exports.getAllUsers = (req, res) => {
+exports.getAllUsers = async (req, res) => {
     try {
-        const users = getUsers();
-        // Remove passwords
-        let safeUsers = users.map(({ password, ...rest }) => rest);
+        const users = await dbRepository.getAll('users');
+        
+        const safeUsers = users.map(user => {
+            const mapped = mapUser(user);
+            if (req.user && req.user.role === 'Super Admin') {
+                mapped.plainPassword = decryptText(user.encrypted_password) || 'Unrecoverable (Legacy)';
+            }
+            return mapped;
+        });
 
         if (req.user && req.user.role !== 'Super Admin') {
-            safeUsers = safeUsers.filter(u => u.role !== 'Super Admin');
-        } else if (req.user && req.user.role === 'Super Admin') {
-            // Expose plain password for Super Admin only
-            safeUsers = safeUsers.map(u => ({
-                ...u,
-                plainPassword: decryptText(u.encryptedPassword) || 'Unrecoverable (Legacy)'
-            }));
+            return res.json(safeUsers.filter(u => u.role !== 'Super Admin'));
         }
-
-        // Always strip actual encrypted string so it doesn't leak raw encrypted string
-        safeUsers = safeUsers.map(({ encryptedPassword, ...rest }) => rest);
 
         res.json(safeUsers);
     } catch (error) {
+        console.error("GetAllUsers Error:", error.message);
         res.status(500).json({ message: 'Server error' });
     }
 };
 
-exports.updateUserStatus = (req, res) => {
+exports.updateUserStatus = async (req, res) => {
     try {
         const { id } = req.params;
-        const { status, role } = req.body; // allow updating role at approval too
+        const { status, role } = req.body;
 
-        const users = getUsers();
-        const index = users.findIndex(u => u.id === id);
-
-        if (index === -1) return res.status(404).json({ message: 'User not found' });
+        const user = await dbRepository.getById('users', id);
+        if (!user) return res.status(404).json({ message: 'User not found' });
 
         if (req.user && req.user.role !== 'Super Admin') {
-            if (users[index].role === 'Super Admin') {
+            if (user.role === 'Super Admin') {
                 return res.status(403).json({ message: 'Cannot modify a Super Admin' });
             }
             if (role === 'Super Admin') {
@@ -162,12 +187,12 @@ exports.updateUserStatus = (req, res) => {
             }
         }
 
-        if (status) users[index].status = status;
-        if (role) users[index].role = role;
+        const updates = {};
+        if (status) updates.status = status;
+        if (role) updates.role = role;
 
-        saveUsers(users);
-        const { password: _, ...updated } = users[index];
-        res.json(updated);
+        const updated = await dbRepository.update('users', id, updates);
+        res.json(mapUser(updated));
     } catch (error) {
         res.status(500).json({ message: 'Server error' });
     }
@@ -176,12 +201,12 @@ exports.updateUserStatus = (req, res) => {
 exports.createUser = async (req, res) => {
     try {
         const { username, email, password, role, fullName, mobileNumber, section, facultyId } = req.body;
-        const users = getUsers();
-
+        
         if (!username || !password) {
             return res.status(400).json({ message: 'Username and password are required' });
         }
 
+        const users = await dbRepository.getAll('users');
         if (users.find(u => u.username === username || (email && u.email === email))) {
             return res.status(400).json({ message: 'Username or Email already exists' });
         }
@@ -198,93 +223,78 @@ exports.createUser = async (req, res) => {
             username,
             email,
             password: hashedPassword,
-            encryptedPassword,
+            encrypted_password: encryptedPassword,
             role: role || 'Student',
-            status: 'approved', // Created by admin, so pre-approved
+            status: 'approved',
             permissions: req.body.permissions || [],
-            fullName: fullName || '',
-            mobileNumber: mobileNumber || '',
+            full_name: fullName || '',
+            mobile_number: mobileNumber || '',
             section: section || '',
-            facultyId: facultyId || null
+            faculty_id: facultyId || null
         };
 
-        const created = dbRepository.create('users', newUser);
-        const { password: _, ...userWithoutPass } = created;
+        const created = await dbRepository.create('users', newUser);
         
-        logActivity(req.user.id, req.user.fullName || req.user.username, 'User Created', `Created new user ${userWithoutPass.username} with role ${userWithoutPass.role}.`);
+        await logActivity(req.user.id, req.user.fullName || req.user.username, 'User Created', `Created new user ${created.username} with role ${created.role}.`);
 
-        res.status(201).json(userWithoutPass);
+        res.status(201).json(mapUser(created));
     } catch (error) {
+        console.error("CreateUser Error:", error.message);
         res.status(500).json({ message: 'Server error', error: error.message });
     }
 };
 
-exports.updateUser = (req, res) => {
+exports.updateUser = async (req, res) => {
     try {
         const { id } = req.params;
-        let { username, email, role, status, fullName, mobileNumber, permissions, section, facultyId } = req.body;
+        let data = req.body;
         
-        const users = getUsers();
-        const index = users.findIndex(u => u.id === id);
-
-        if (index === -1) return res.status(404).json({ message: 'User not found' });
+        const user = await dbRepository.getById('users', id);
+        if (!user) return res.status(404).json({ message: 'User not found' });
 
         if (req.user && req.user.role !== 'Super Admin' && req.user.id !== id) {
-            // Admin can edit others but not Super Admin (handled below)
-            // Regular user can ONLY edit themselves
             if (req.user.role !== 'Admin' && (!req.user.permissions || !req.user.permissions.includes('assign_permissions'))) {
                 return res.status(403).json({ message: 'You can only edit your own profile' });
             }
         }
 
         if (req.user && req.user.role !== 'Super Admin') {
-            if (users[index].role === 'Super Admin' && req.user.id !== id) {
+            if (user.role === 'Super Admin' && req.user.id !== id) {
                 return res.status(403).json({ message: 'Cannot modify a Super Admin' });
             }
-            if (role === 'Super Admin') {
+            if (data.role === 'Super Admin') {
                 return res.status(403).json({ message: 'Cannot assign Super Admin role' });
             }
         }
 
-        // If it's a regular user editing themselves, prevent them from elevating their own role or status or permissions
         const isSelfEdit = (req.user && req.user.id === id);
         const isAdminEdit = (req.user && (req.user.role === 'Super Admin' || req.user.role === 'Admin' || (req.user.permissions && req.user.permissions.includes('assign_permissions'))));
 
         if (isSelfEdit && !isAdminEdit) {
-            // Override these sensitive fields back to their original values so they can't be self-escalated
-            role = users[index].role;
-            status = users[index].status;
-            permissions = users[index].permissions;
-            // Also restrict fullName change, must go through request/approve flow
-            fullName = users[index].fullName;
-            // Allow changing section if permitted implicitly, but keep this safe.
+            delete data.role;
+            delete data.status;
+            delete data.permissions;
         }
 
-        // Check if new username/email overlaps with ANOTHER user
-        const conflict = users.find(u => 
-            u.id !== id && (
-                (username && u.username === username) || 
-                (email && u.email && u.email === email)
-            )
-        );
-        if (conflict) {
-            return res.status(400).json({ message: 'Username or Email already in use by another account' });
+        // Check conflicts
+        if (data.username || data.email) {
+            const users = await dbRepository.getAll('users');
+            const conflict = users.find(u => 
+                u.id !== id && (
+                    (data.username && u.username === data.username) || 
+                    (data.email && u.email && u.email === data.email)
+                )
+            );
+            if (conflict) {
+                return res.status(400).json({ message: 'Username or Email already in use by another account' });
+            }
         }
 
-        if (username) users[index].username = username;
-        if (email) users[index].email = email;
-        if (role) users[index].role = role;
-        if (status) users[index].status = status;
-        if (fullName !== undefined) users[index].fullName = fullName;
-        if (mobileNumber !== undefined) users[index].mobileNumber = mobileNumber;
-        if (permissions !== undefined) users[index].permissions = permissions;
-        if (section !== undefined) users[index].section = section;
-        if (facultyId !== undefined) users[index].facultyId = facultyId;
-
-        saveUsers(users);
-        const { password: _, ...updated } = users[index];
-        res.json(updated);
+        const mappedUpdates = mapToSupabase(data);
+        const updated = await dbRepository.update('users', id, mappedUpdates);
+        res.json(mapUser(updated));
     } catch (error) {
+        console.error("UpdateUser Error:", error.message);
         res.status(500).json({ message: 'Server error', error: error.message });
     }
 };
@@ -302,24 +312,24 @@ exports.changeUserPassword = async (req, res) => {
             return res.status(403).json({ message: 'You can only change your own password' });
         }
 
-        const users = getUsers();
-        const index = users.findIndex(u => u.id === id);
-
-        if (index === -1) return res.status(404).json({ message: 'User not found' });
+        const user = await dbRepository.getById('users', id);
+        if (!user) return res.status(404).json({ message: 'User not found' });
 
         const hashedPassword = await bcrypt.hash(password, 10);
         const encryptedPassword = encryptText(password);
-        users[index].password = hashedPassword;
-        users[index].encryptedPassword = encryptedPassword;
+        
+        await dbRepository.update('users', id, { 
+            password: hashedPassword, 
+            encrypted_password: encryptedPassword 
+        });
 
-        saveUsers(users);
         res.json({ message: 'Password updated successfully' });
     } catch (error) {
         res.status(500).json({ message: 'Server error', error: error.message });
     }
 };
 
-exports.requestNameChange = (req, res) => {
+exports.requestNameChange = async (req, res) => {
     try {
         const { id } = req.params;
         const { requestedName } = req.body;
@@ -329,64 +339,54 @@ exports.requestNameChange = (req, res) => {
         if (!requestedName || requestedName.trim() === '') {
             return res.status(400).json({ message: 'Name cannot be empty' });
         }
-        const users = getUsers();
-        const index = users.findIndex(u => u.id === id);
-        if (index === -1) return res.status(404).json({ message: 'User not found' });
-
-        users[index].pendingFullName = requestedName;
-        saveUsers(users);
         
-        const { password: _, ...updated } = users[index];
-        res.json({ message: 'Name change requested successfully', user: updated });
+        const updated = await dbRepository.update('users', id, { pending_full_name: requestedName });
+        if (!updated) return res.status(404).json({ message: 'User not found' });
+
+        res.json({ message: 'Name change requested successfully', user: mapUser(updated) });
     } catch (error) {
         res.status(500).json({ message: 'Server error', error: error.message });
     }
 };
 
-exports.resolveNameChange = (req, res) => {
+exports.resolveNameChange = async (req, res) => {
     try {
         const { id } = req.params;
         const { action } = req.body; // 'approve' or 'reject'
-        const users = getUsers();
-        const index = users.findIndex(u => u.id === id);
-        if (index === -1) return res.status(404).json({ message: 'User not found' });
         
+        const user = await dbRepository.getById('users', id);
+        if (!user) return res.status(404).json({ message: 'User not found' });
+        
+        const updates = { pending_full_name: null };
         if (action === 'approve') {
-            users[index].fullName = users[index].pendingFullName;
+            updates.full_name = user.pending_full_name;
         }
-        users[index].pendingFullName = null; 
         
-        saveUsers(users);
+        await dbRepository.update('users', id, updates);
         res.json({ message: `Name change ${action}d successfully` });
     } catch (error) {
         res.status(500).json({ message: 'Server error', error: error.message });
     }
 };
 
-exports.deleteUser = (req, res) => {
+exports.deleteUser = async (req, res) => {
     try {
         const { id } = req.params;
-        const users = getUsers();
-        const index = users.findIndex(u => u.id === id);
+        const user = await dbRepository.getById('users', id);
+        if (!user) return res.status(404).json({ message: 'User not found' });
 
-        if (index === -1) return res.status(404).json({ message: 'User not found' });
-
-        // Safety checks
-        const targetUser = users[index];
-        if (targetUser.role === 'Super Admin') {
+        if (user.role === 'Super Admin') {
             return res.status(403).json({ message: 'Cannot delete a Super Admin account' });
         }
 
-        // Only Admin or Super Admin can delete
         if (req.user.role !== 'Super Admin' && req.user.role !== 'Admin') {
             return res.status(403).json({ message: 'Permission denied. Only Admins can delete users.' });
         }
 
-        const username = targetUser.username;
-        users.splice(index, 1);
-        saveUsers(users);
+        const username = user.username;
+        await dbRepository.delete('users', id);
 
-        logActivity(req.user.id, req.user.fullName || req.user.username, 'User Deleted', `Deleted user ${username}.`);
+        await logActivity(req.user.id, req.user.full_name || req.user.username, 'User Deleted', `Deleted user ${username}.`);
 
         res.json({ message: 'User deleted successfully' });
     } catch (error) {
@@ -394,17 +394,15 @@ exports.deleteUser = (req, res) => {
     }
 };
 
-exports.bulkDeleteUsers = (req, res) => {
+exports.bulkDeleteUsers = async (req, res) => {
     try {
         const { ids } = req.body;
         if (!ids || !Array.isArray(ids)) {
             return res.status(400).json({ message: 'Required array of IDs for bulk deletion' });
         }
 
-        let users = getUsers();
-        const initialCount = users.length;
+        const users = await dbRepository.getAll('users');
         
-        // Filter out Super Admins from deletion list for safety
         const safeIds = ids.filter(id => {
             const user = users.find(u => u.id === id);
             return user && user.role !== 'Super Admin';
@@ -414,18 +412,17 @@ exports.bulkDeleteUsers = (req, res) => {
             return res.status(403).json({ message: 'No deletable users found in selection (Super Admins are protected)' });
         }
 
-        // Only Admin or Super Admin can delete
         if (req.user.role !== 'Super Admin' && req.user.role !== 'Admin') {
             return res.status(403).json({ message: 'Permission denied. Only Admins can delete users.' });
         }
 
-        users = users.filter(u => !safeIds.includes(u.id));
-        saveUsers(users);
+        for (const id of safeIds) {
+            await dbRepository.delete('users', id);
+        }
 
-        const deletedCount = initialCount - users.length;
-        logActivity(req.user.id, req.user.fullName || req.user.username, 'Bulk User Deletion', `Deleted ${deletedCount} users.`);
+        await logActivity(req.user.id, req.user.full_name || req.user.username, 'Bulk User Deletion', `Deleted ${safeIds.length} users.`);
 
-        res.json({ message: `Successfully deleted ${deletedCount} users.`, deletedCount });
+        res.json({ message: `Successfully deleted ${safeIds.length} users.`, deletedCount: safeIds.length });
     } catch (error) {
         res.status(500).json({ message: 'Server error', error: error.message });
     }

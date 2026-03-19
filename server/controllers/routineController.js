@@ -1,15 +1,15 @@
 const dbRepository = require('../repositories/dbRepository');
-const axios = require('axios'); // Will need to install axios if not present, or use fetch
+const axios = require('axios'); 
 const { logActivity } = require('./auditLogController');
 
 const AI_SERVICE_URL = process.env.AI_SERVICE_URL || 'http://localhost:8000/optimize';
 
 // Helper to get human-readable names for IDs
-const getEntryDetails = (entry) => {
-    const courses = dbRepository.getAll('courses');
-    const batches = dbRepository.getAll('batches');
-    const faculties = dbRepository.getAll('faculty');
-    const rooms = dbRepository.getAll('rooms');
+const getEntryDetails = async (entry) => {
+    const courses = await dbRepository.getAll('courses');
+    const batches = await dbRepository.getAll('batches');
+    const faculties = await dbRepository.getAll('faculty');
+    const rooms = await dbRepository.getAll('rooms');
 
     const course = courses.find(c => c.id == entry.course_id);
     const batch = batches.find(b => b.id == entry.batch_id);
@@ -24,7 +24,7 @@ const getEntryDetails = (entry) => {
     };
 };
 
-exports.addRoutineEntry = (req, res) => {
+exports.addRoutineEntry = async (req, res) => {
     try {
         const { day, time, batch_id, course_id, faculty_id, room_id } = req.body;
 
@@ -42,10 +42,10 @@ exports.addRoutineEntry = (req, res) => {
             room_id: room_id ? parseInt(room_id) : null
         };
 
-        const created = dbRepository.create('routine_schedule', newEntry);
-        const details = getEntryDetails(created);
+        const created = await dbRepository.create('routine_schedule', newEntry);
+        const details = await getEntryDetails(created);
 
-        logActivity(
+        await logActivity(
             req.user?.id || 'System', 
             req.user?.fullName || req.user?.username || 'Guest', 
             'Add Routine Entry', 
@@ -60,15 +60,15 @@ exports.addRoutineEntry = (req, res) => {
     }
 };
 
-exports.updateRoutineEntry = (req, res) => {
+exports.updateRoutineEntry = async (req, res) => {
     try {
         const { id } = req.params;
         const updates = req.body;
 
-        const oldEntry = dbRepository.getById('routine_schedule', id);
+        const oldEntry = await dbRepository.getById('routine_schedule', id);
         if (!oldEntry) return res.status(404).json({ message: 'Class not found' });
         
-        const oldDetails = getEntryDetails(oldEntry);
+        const oldDetails = await getEntryDetails(oldEntry);
         const oldTime = oldEntry.time;
         const oldDay = oldEntry.day;
 
@@ -79,8 +79,8 @@ exports.updateRoutineEntry = (req, res) => {
         if (updates.room_id) parsedUpdates.room_id = parseInt(updates.room_id);
         else if (updates.room_id === '' || updates.room_id === null) parsedUpdates.room_id = null;
 
-        const updatedEntry = dbRepository.update('routine_schedule', id, parsedUpdates);
-        const newDetails = getEntryDetails(updatedEntry);
+        const updatedEntry = await dbRepository.update('routine_schedule', id, parsedUpdates);
+        const newDetails = await getEntryDetails(updatedEntry);
 
         // Analyze changes
         const changes = [];
@@ -93,7 +93,7 @@ exports.updateRoutineEntry = (req, res) => {
 
         const changeSummary = changes.length > 0 ? changes.join(', ') : 'No data changes detected (meta-update only).';
 
-        logActivity(
+        await logActivity(
             req.user.id, 
             req.user.fullName || req.user.username, 
             'Update Routine Entry', 
@@ -107,20 +107,20 @@ exports.updateRoutineEntry = (req, res) => {
     }
 };
 
-exports.deleteRoutineEntry = (req, res) => {
+exports.deleteRoutineEntry = async (req, res) => {
     try {
         const { id } = req.params;
-        const entryToDelete = dbRepository.getById('routine_schedule', id);
+        const entryToDelete = await dbRepository.getById('routine_schedule', id);
         if (!entryToDelete) return res.status(404).json({ message: 'Class not found' });
 
-        const details = getEntryDetails(entryToDelete);
-        const success = dbRepository.delete('routine_schedule', id);
+        const details = await getEntryDetails(entryToDelete);
+        const success = await dbRepository.delete('routine_schedule', id);
 
         if (!success) {
             return res.status(404).json({ message: 'Class not found' });
         }
 
-        logActivity(
+        await logActivity(
             req.user.id, 
             req.user.fullName || req.user.username, 
             'Delete Routine Entry', 
@@ -134,17 +134,20 @@ exports.deleteRoutineEntry = (req, res) => {
     }
 };
 
-exports.getRoutine = (req, res) => {
-    const routine = dbRepository.getAll('routine_schedule');
-    res.json(routine);
+exports.getRoutine = async (req, res) => {
+    try {
+        const routine = await dbRepository.getAll('routine_schedule');
+        res.json(routine);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
 };
 
-exports.clearRoutine = (req, res) => {
+exports.clearRoutine = async (req, res) => {
     try {
-        // Clear the collection using direct internal collection write
-        dbRepository._writeCollection('routine_schedule', []);
+        await dbRepository.clearCollection('routine_schedule');
         
-        logActivity(req.user.id, req.user.fullName || req.user.username, 'Clear Routine', `Cleared all routine entries.`);
+        await logActivity(req.user.id, req.user.fullName || req.user.username, 'Clear Routine', `Cleared all routine entries.`);
 
         res.json({ message: 'Routine cleared successfully' });
     } catch (error) {
@@ -153,9 +156,9 @@ exports.clearRoutine = (req, res) => {
     }
 };
 
-exports.exportRoutine = (req, res) => {
+exports.exportRoutine = async (req, res) => {
     try {
-        const routine = dbRepository.getAll('routine_schedule');
+        const routine = await dbRepository.getAll('routine_schedule');
 
         // Define filename for download
         const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
@@ -171,7 +174,7 @@ exports.exportRoutine = (req, res) => {
     }
 };
 
-exports.importRoutine = (req, res) => {
+exports.importRoutine = async (req, res) => {
     try {
         const routineData = req.body;
 
@@ -179,7 +182,7 @@ exports.importRoutine = (req, res) => {
             return res.status(400).json({ message: 'Invalid format. Expected an array of routine entries.' });
         }
 
-        // Validate basic structure (optional but recommended)
+        // Validate basic structure
         const isValid = routineData.every(entry =>
             entry.id && entry.day && entry.time && typeof entry.batch_id === 'number'
         );
@@ -188,10 +191,10 @@ exports.importRoutine = (req, res) => {
             return res.status(400).json({ message: 'Invalid data structure in backup file.' });
         }
 
-        // Overwrite the collection
-        dbRepository._writeCollection('routine_schedule', routineData);
+        await dbRepository.clearCollection('routine_schedule');
+        await dbRepository.bulkCreate('routine_schedule', routineData);
 
-        logActivity(req.user.id, req.user.fullName || req.user.username, 'Import Routine', `Imported ${routineData.length} routine entries from backup.`);
+        await logActivity(req.user.id, req.user.fullName || req.user.username, 'Import Routine', `Imported ${routineData.length} routine entries from backup.`);
 
         res.json({ message: 'Routine logic restored successfully.', count: routineData.length });
 

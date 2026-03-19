@@ -1,35 +1,69 @@
 const dbRepository = require('../repositories/dbRepository');
 
-exports.getAuditLogs = (req, res) => {
+exports.getAuditLogs = async (req, res) => {
     try {
-        const logs = dbRepository.getAll('audit_logs');
+        const logs = await dbRepository.getAll('audit_logs');
+        
+        // Map Supabase snake_case back to frontend camelCase
+        const mappedLogs = logs.map(log => ({
+            id: log.id,
+            userId: log.user_id,
+            fullName: log.full_name,
+            activityType: log.activity_type,
+            details: typeof log.details === 'object' ? JSON.stringify(log.details) : log.details,
+            timestamp: log.timestamp
+        }));
+
         // Sort by timestamp descending (newest first)
-        const sortedLogs = [...logs].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+        const sortedLogs = [...mappedLogs].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
         res.json(sortedLogs);
     } catch (error) {
         console.error("Error fetching audit logs:", error.message);
         res.status(500).json({ message: 'Failed to fetch audit logs' });
     }
 };
-exports.updateAuditLog = (req, res) => {
+
+exports.updateAuditLog = async (req, res) => {
     try {
         const { id } = req.params;
         const updates = req.body;
         
-        const updatedLog = dbRepository.update('audit_logs', id, updates);
+        // Map frontend camelCase to Supabase snake_case
+        const mappedUpdates = {
+            user_id: updates.userId,
+            full_name: updates.fullName,
+            activity_type: updates.activityType,
+            details: updates.details,
+            timestamp: updates.timestamp
+        };
+        
+        // Remove undefined values
+        Object.keys(mappedUpdates).forEach(key => mappedUpdates[key] === undefined && delete mappedUpdates[key]);
+
+        const updatedLog = await dbRepository.update('audit_logs', id, mappedUpdates);
         
         if (!updatedLog) {
             return res.status(404).json({ message: 'Audit log not found' });
         }
         
-        res.json(updatedLog);
+        // Map back to camelCase for response
+        const responseLog = {
+            id: updatedLog.id,
+            userId: updatedLog.user_id,
+            fullName: updatedLog.full_name,
+            activityType: updatedLog.activity_type,
+            details: updatedLog.details,
+            timestamp: updatedLog.timestamp
+        };
+        
+        res.json(responseLog);
     } catch (error) {
         console.error("Error updating audit log:", error.message);
         res.status(500).json({ message: 'Failed to update audit log' });
     }
 };
 
-exports.deleteMultipleAuditLogs = (req, res) => {
+exports.deleteMultipleAuditLogs = async (req, res) => {
     try {
         const { ids } = req.body;
         
@@ -38,12 +72,12 @@ exports.deleteMultipleAuditLogs = (req, res) => {
         }
         
         // Delete each log entry
-        ids.forEach(id => {
-            dbRepository.delete('audit_logs', id);
-        });
+        for (const id of ids) {
+            await dbRepository.delete('audit_logs', id);
+        }
         
         // Log the bulk deletion activity
-        this.logActivity(
+        await this.logActivity(
             req.user.id,
             req.user.fullName || req.user.username,
             'Bulk Delete',
@@ -58,17 +92,16 @@ exports.deleteMultipleAuditLogs = (req, res) => {
 };
 
 // Helper for internal use in other controllers
-exports.logActivity = (userId, fullName, activityType, details) => {
+exports.logActivity = async (userId, fullName, activityType, details) => {
     try {
         const newLog = {
-            id: Date.now().toString() + Math.random().toString(36).substr(2, 5),
-            userId,
-            fullName,
-            activityType,
-            details,
+            user_id: userId === 'System' || userId === 'Guest' ? null : userId,
+            full_name: fullName,
+            activity_type: activityType,
+            details: details,
             timestamp: new Date().toISOString()
         };
-        dbRepository.create('audit_logs', newLog);
+        await dbRepository.create('audit_logs', newLog);
     } catch (error) {
         console.error("Logging Error:", error.message);
     }

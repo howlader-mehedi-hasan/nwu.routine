@@ -3,7 +3,7 @@ const jwt = require('jsonwebtoken');
 const JWT_SECRET = process.env.JWT_SECRET || 'nwu-routine-secret-key-super-secure';
 const dbRepository = require('../repositories/dbRepository');
 
-exports.protect = (req, res, next) => {
+exports.protect = async (req, res, next) => {
     try {
         let token;
         if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
@@ -19,8 +19,7 @@ exports.protect = (req, res, next) => {
         const decoded = jwt.verify(token, JWT_SECRET);
         
         // Fetch fresh user to ensure we have fullName and other details
-        const users = dbRepository.getAll('users');
-        const user = users.find(u => u.id === decoded.id);
+        const user = await dbRepository.getById('users', decoded.id);
         
         if (!user) {
             return res.status(401).json({ message: 'User no longer exists' });
@@ -44,7 +43,7 @@ exports.authorize = (...roles) => {
 };
 
 exports.requirePermission = (requiredPermission) => {
-    return (req, res, next) => {
+    return async (req, res, next) => {
         if (!req.user) {
             return res.status(401).json({ message: 'Not authorized' });
         }
@@ -54,14 +53,8 @@ exports.requirePermission = (requiredPermission) => {
             return next();
         }
 
-        // Token might not have permissions array if it's old, 
-        // ideally we'd fetch the fresh user from DB here to be secure and up-to-date,
-        // but since we encode standard things in token, let's fetch from DB if needed,
-        // or just trust the token if we add permissions to it.
-        // Let's fetch the fresh user to avoid token staleness for permissions:
-        const dbRepository = require('../repositories/dbRepository');
-        const users = dbRepository.getAll('users');
-        const currentUser = users.find(u => u.id === req.user.id);
+        // Fetch the fresh user to avoid token staleness for permissions:
+        const currentUser = await dbRepository.getById('users', req.user.id);
 
         if (!currentUser) {
             return res.status(401).json({ message: 'User no longer exists' });

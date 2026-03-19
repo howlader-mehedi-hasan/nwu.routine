@@ -10,6 +10,7 @@ import SettingsModal from './SettingsModal';
 import PdfDownloadModal from './PdfDownloadModal';
 import { Settings, Settings2 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import FacultyContactModal from './ui/FacultyContactModal';
 
 const WeekRoutineView = ({ overtimeVisibility, setOvertimeVisibility }) => {
     const { user, hasPermission } = useAuth();
@@ -50,6 +51,10 @@ const WeekRoutineView = ({ overtimeVisibility, setOvertimeVisibility }) => {
         general: { theory_slots: [], lab_slots: [], slot_mapping: {} },
         daily_overrides: {}
     });
+
+    // Faculty contact modal state
+    const [showContactModal, setShowContactModal] = useState(false);
+    const [selectedFacultyList, setSelectedFacultyList] = useState([]);
 
     const defaultPdfSettings = {
         universityName: "North Western University",
@@ -215,6 +220,16 @@ const WeekRoutineView = ({ overtimeVisibility, setOvertimeVisibility }) => {
             roomId: classInfo.roomId
         });
         setIsAddModalOpen(true);
+    };
+
+    const handleCellClick = (currentData) => {
+        if (!currentData || currentData.length === 0) return;
+
+        const facultyIds = currentData.map(d => String(d.facultyId));
+        const selectFaculty = metadata.faculty.filter(f => facultyIds.includes(String(f.id)));
+        
+        setSelectedFacultyList(selectFaculty);
+        setShowContactModal(true);
     };
 
     const handleSaveClass = async () => {
@@ -655,9 +670,9 @@ const WeekRoutineView = ({ overtimeVisibility, setOvertimeVisibility }) => {
                                                         <div
                                                             className={cn(
                                                                 "flex flex-col items-center justify-center space-y-0.5 p-1 rounded-sm transition-colors h-full w-full relative group",
-                                                                canEdit ? "bg-card hover:bg-muted/50 cursor-pointer" : ""
+                                                                "bg-card hover:bg-muted/50 cursor-pointer"
                                                             )}
-                                                            onClick={() => canEdit && handleEditClassClick(currentData, batch.id)}
+                                                            onClick={() => handleCellClick(currentData)}
                                                         >
                                                             <span className="font-bold text-foreground text-[10px] leading-[1.1]">{displayCourses}</span>
                                                             <span className="text-[9px] text-muted-foreground bg-muted px-1 py-0 rounded">
@@ -695,7 +710,13 @@ const WeekRoutineView = ({ overtimeVisibility, setOvertimeVisibility }) => {
                                                                             <Plus className="h-3 w-3" />
                                                                         </Button>
                                                                     )}
-                                                                    <Edit2 className="h-3 w-3 text-muted-foreground" />
+                                                                    <Edit2 
+                                                                        className="h-4 w-4 text-muted-foreground hover:text-indigo-600 cursor-pointer p-0.5" 
+                                                                        onClick={(e) => {
+                                                                            e.stopPropagation();
+                                                                            handleEditClassClick(currentData, batch.id);
+                                                                        }}
+                                                                    />
                                                                 </span>
                                                             )}
                                                         </div>
@@ -722,6 +743,12 @@ const WeekRoutineView = ({ overtimeVisibility, setOvertimeVisibility }) => {
                     </table>
                 </div>
             </div>
+
+            <FacultyContactModal
+                isOpen={showContactModal}
+                onClose={() => setShowContactModal(false)}
+                facultyList={selectedFacultyList}
+            />
 
             {/* Add Class Modal */}
             {

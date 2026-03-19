@@ -21,7 +21,7 @@ const SettingsLayout = ({ children }) => {
 
     // Admin panel only for specific roles
     if (user && hasAnyPermission(['manage_faculty', 'manage_courses', 'manage_rooms', 'manage_batches'])) {
-        settingItems.push({ path: '/admin', label: 'Admin Panel', icon: <Database size={18} /> });
+        settingItems.push({ path: '/admin', label: 'Database (Admin)', icon: <Database size={18} /> });
     }
 
     // Settings for public registration configuration

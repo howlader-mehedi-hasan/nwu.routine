@@ -1,110 +1,150 @@
-const fs = require('fs');
-const path = require('path');
+require('dotenv').config();
+const { createClient } = require('@supabase/supabase-js');
 
-const DATA_DIR = path.join(__dirname, '../../data');
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_KEY;
+
+if (!supabaseUrl || !supabaseKey) {
+    console.error('Missing Supabase environment variables. Please check your .env file.');
+}
+
+const supabase = createClient(supabaseUrl, supabaseKey);
 
 class DBRepository {
     constructor() {
-        this.dataDir = DATA_DIR;
-        if (!fs.existsSync(this.dataDir)) {
-            fs.mkdirSync(this.dataDir, { recursive: true });
-        }
-    }
-
-    _getFilePath(collectionName) {
-        return path.join(this.dataDir, `${collectionName}.json`);
-    }
-
-    // Helper to read DB for a specific collection
-    _readCollection(collectionName) {
-        const filePath = this._getFilePath(collectionName);
-        try {
-            if (fs.existsSync(filePath)) {
-                const data = fs.readFileSync(filePath, 'utf8');
-                return JSON.parse(data);
-            }
-        } catch (err) {
-            console.error(`Error reading ${collectionName} DB:`, err);
-        }
-
-        // Default values based on collection
-        if (collectionName === 'settings') return {};
-        return [];
-    }
-
-    // Helper to write DB for a specific collection
-    _writeCollection(collectionName, data) {
-        const filePath = this._getFilePath(collectionName);
-        try {
-            fs.writeFileSync(filePath, JSON.stringify(data, null, 2), 'utf8');
-            return true;
-        } catch (err) {
-            console.error(`Error writing ${collectionName} DB:`, err);
-            return false;
-        }
+        this.supabase = supabase;
     }
 
     // Generic Get All
-    getAll(collectionName) {
-        return this._readCollection(collectionName);
+    async getAll(collectionName) {
+        const { data, error } = await this.supabase
+            .from(collectionName)
+            .select('*');
+        
+        if (error) {
+            console.error(`Error fetching all from ${collectionName}:`, error);
+            return [];
+        }
+        return data;
     }
 
     // Generic Get By ID
-    getById(collectionName, id) {
-        const collection = this._readCollection(collectionName);
-        return collection.find(item => item.id == id);
+    async getById(collectionName, id) {
+        const { data, error } = await this.supabase
+            .from(collectionName)
+            .select('*')
+            .eq('id', id)
+            .single();
+        
+        if (error) {
+            console.error(`Error fetching ${collectionName} by ID ${id}:`, error);
+            return null;
+        }
+        return data;
     }
 
     // Generic Create
-    create(collectionName, item) {
-        const collection = this._readCollection(collectionName);
-
-        // Generate simple ID if not provided (max id + 1)
-        if (!item.id) {
-            const maxId = collection.reduce((max, i) => (i.id > max ? i.id : max), 0);
-            item.id = maxId + 1;
+    async create(collectionName, item) {
+        const { data, error } = await this.supabase
+            .from(collectionName)
+            .insert(item)
+            .select()
+            .single();
+        
+        if (error) {
+            console.error(`Error creating in ${collectionName}:`, error);
+            return null;
         }
-
-        collection.push(item);
-        this._writeCollection(collectionName, collection);
-        return item;
+        return data;
     }
 
     // Generic Update
-    update(collectionName, id, updates) {
-        const collection = this._readCollection(collectionName);
-        const index = collection.findIndex(item => item.id == id);
-        if (index === -1) return null;
-
-        collection[index] = { ...collection[index], ...updates };
-        this._writeCollection(collectionName, collection);
-        return collection[index];
+    async update(collectionName, id, updates) {
+        const { data, error } = await this.supabase
+            .from(collectionName)
+            .update(updates)
+            .eq('id', id)
+            .select()
+            .single();
+        
+        if (error) {
+            console.error(`Error updating ${collectionName} with ID ${id}:`, error);
+            return null;
+        }
+        return data;
     }
 
     // Generic Delete
-    delete(collectionName, id) {
-        let collection = this._readCollection(collectionName);
-        const initialLength = collection.length;
-
-        collection = collection.filter(item => item.id != id);
-
-        if (collection.length < initialLength) {
-            this._writeCollection(collectionName, collection);
-            return true;
+    async delete(collectionName, id) {
+        const { error } = await this.supabase
+            .from(collectionName)
+            .delete()
+            .eq('id', id);
+        
+        if (error) {
+            console.error(`Error deleting from ${collectionName} with ID ${id}:`, error);
+            return false;
         }
-        return false;
+        return true;
     }
 
     // Settings (special handling)
-    getSettings() {
-        return this._readCollection('settings');
+    async getSettings() {
+        const { data, error } = await this.supabase
+            .from('settings')
+            .select('value')
+            .eq('key', 'app_settings')
+            .single();
+        
+        if (error) {
+            console.error('Error fetching settings:', error);
+            return {};
+        }
+        return data.value;
     }
 
-    updateSettings(updates) {
-        const settings = this._readCollection('settings');
-        const newSettings = { ...settings, ...updates };
-        this._writeCollection('settings', newSettings);
-        return newSettings;
+    async updateSettings(updates) {
+        const currentSettings = await this.getSettings();
+        const newSettings = { ...currentSettings, ...updates };
+
+        const { data, error } = await this.supabase
+            .from('settings')
+            .upsert({ key: 'app_settings', value: newSettings })
+            .select('value')
+            .single();
+        
+        if (error) {
+            console.error('Error updating settings:', error);
+            return currentSettings;
+        }
+        return data.value;
+    }
+
+    // Bulk Operations
+    async clearCollection(collectionName) {
+        const { error } = await this.supabase
+            .from(collectionName)
+            .delete()
+            .neq('id', 0); // Condition to delete all records
+        
+        if (error) {
+            console.error(`Error clearing ${collectionName}:`, error);
+            return false;
+        }
+        return true;
+    }
+
+    async bulkCreate(collectionName, items) {
+        const { data, error } = await this.supabase
+            .from(collectionName)
+            .insert(items)
+            .select();
+        
+        if (error) {
+            console.error(`Error bulk creating in ${collectionName}:`, error);
+            return null;
+        }
+        return data;
     }
 }
 

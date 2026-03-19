@@ -11,6 +11,7 @@ import { cn } from '../lib/utils';
 import SettingsModal from './SettingsModal';
 import PdfDownloadModal from './PdfDownloadModal';
 import { useAuth } from '../contexts/AuthContext';
+import FacultyContactModal from './ui/FacultyContactModal';
 
 const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 const operatingDays = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
@@ -91,6 +92,10 @@ const RoutineView = ({ overtimeVisibility, setOvertimeVisibility }) => {
         general: { theory_slots: [], lab_slots: [], slot_mapping: {} },
         daily_overrides: {}
     });
+
+    // Faculty contact modal state
+    const [showContactModal, setShowContactModal] = useState(false);
+    const [selectedFacultyList, setSelectedFacultyList] = useState([]);
 
     const defaultPdfSettings = {
         universityName: "North Western University",
@@ -210,6 +215,16 @@ const RoutineView = ({ overtimeVisibility, setOvertimeVisibility }) => {
             });
         }
         setShowModal(true);
+    };
+
+    const handleCellClick = (currentData) => {
+        if (!currentData || currentData.length === 0) return;
+
+        const facultyIds = currentData.map(d => String(d.facultyId));
+        const selectFaculty = metadata.faculty.filter(f => facultyIds.includes(String(f.id)));
+        
+        setSelectedFacultyList(selectFaculty);
+        setShowContactModal(true);
     };
 
     const handleSave = async () => {
@@ -408,9 +423,9 @@ const RoutineView = ({ overtimeVisibility, setOvertimeVisibility }) => {
                         <div
                             className={cn(
                                 "flex flex-col items-center justify-center space-y-1 p-2 rounded-md transition-colors h-full w-full relative group",
-                                canEdit ? "cursor-pointer hover:bg-muted/50" : ""
+                                "cursor-pointer hover:bg-muted/50"
                             )}
-                            onClick={() => canEdit && openEditModal(currentData)}
+                            onClick={() => handleCellClick(currentData)}
                         >
                             <span className="font-bold text-foreground text-sm">{displayCourses}</span>
                             <span className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
@@ -447,7 +462,13 @@ const RoutineView = ({ overtimeVisibility, setOvertimeVisibility }) => {
                                             <Plus className="h-4 w-4" />
                                         </Button>
                                     )}
-                                    <Edit2 className="h-3 w-3 text-muted-foreground" />
+                                    <Edit2
+                                        className="h-4 w-4 text-muted-foreground hover:text-indigo-600 cursor-pointer p-0.5"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            openEditModal(currentData);
+                                        }}
+                                    />
                                 </span>
                             )}
                         </div>
@@ -618,7 +639,13 @@ const RoutineView = ({ overtimeVisibility, setOvertimeVisibility }) => {
                                             <Plus className="h-4 w-4" />
                                         </Button>
                                     )}
-                                    <Edit2 className="h-3 w-3 text-muted-foreground" />
+                                    <Edit2 
+                                        className="h-4 w-4 text-muted-foreground hover:text-indigo-600 cursor-pointer p-0.5" 
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            openEditModal(currentData);
+                                        }}
+                                    />
                                 </span>
                             )}
                         </div>
@@ -1233,8 +1260,14 @@ const RoutineView = ({ overtimeVisibility, setOvertimeVisibility }) => {
                         </tbody>
                     </table>
                 </div>
-                {/* Selection Modal for Multi-Class Slots */}
-                {selectionModalData && (
+                <FacultyContactModal
+                isOpen={showContactModal}
+                onClose={() => setShowContactModal(false)}
+                facultyList={selectedFacultyList}
+            />
+
+            {/* Selection Modal for Multi-Class Slots */}
+            {selectionModalData && (
                     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
                         <div className="bg-card w-full max-w-sm rounded-lg shadow-lg border border-border p-6 space-y-4">
                             <div className="flex justify-between items-center mb-2">

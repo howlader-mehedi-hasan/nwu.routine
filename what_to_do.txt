@@ -138,42 +138,54 @@ Standard cell borders must have a 0.3mm width.
 The vertical boundary lines that separate each Day have a thicker 1mm width (to perfectly match the UI layout where days are distinctly separated).
 
 
-Faculty Selection & Personalized Routine View
-The goal is to allow new users registering as "Faculty" to select their specific faculty profile from a dropdown, and ensure that when a faculty member views the routine page, it automatically displays their personalized schedule.
-
-Proposed Changes
-Client (Frontend)
-[MODIFY] 
-client/src/components/AuthPage.jsx
-Add a new state variable faculties and fetch all faculties during component mount alongside batches and roles.
-Add facultyId to the initial formData state.
-Add a new conditional form field that appears when formData.role === 'Faculty'. This field will be a <select> dropdown populated with the fetched faculties.
-Ensure facultyId is required if role === 'Faculty' before form submission.
-[MODIFY] 
-client/src/components/RoutineView.jsx
-Update the viewMode and selectedFacultyId state initialization logic.
-If the logged-in user.role === 'Faculty' and they have a facultyId, set viewMode to 'faculty' and selectedFacultyId to the user's facultyId by default.
-Server (Backend)
-[MODIFY] 
-server/controllers/authController.js
-In exports.register and exports.createUser, extract facultyId from req.body.
-Save facultyId to the newly created user object.
-In exports.updateUser, allow updating the facultyId field so Super Admins can assign or correct a user's faculty profile.
-Verification Plan
-Automated Tests
-Currently, there are no existing jest/mocha automated tests for this codebase.
-
-Manual Verification
-Frontend Registration: Run the application locally and navigate to the registration page. Select "Faculty" as the requested role and verify that a dropdown of all faculties instantly appears.
-Backend Storage: Submit a registration request as a Faculty. Upon approval (or using Mock data), verify that the 
-users.json
- backend file successfully stores the selected facultyId.
+give number column customization option for both faculty member table and guest teachers table
 
 
-for downloadable pdf of routine view
-for 2 alter course
-first line contain first course code (CSE-2204)
-second line contain first course's faculty and room number seperated by underscore (MRZI_302)
-third line contain ALT text (-alt-)
-forth line contain second course code (HUM-3204)
-fifth line contain second course's faculty and room number seperated by underscore (ANK_303)
+create footer section with reserved rights text(All rights reserved by The department of Computer Science and Engineering, North Western University, Khulna, Bangladesh), developer credit(https://howlader-mehedi-hasan.github.io/portfoleo/)
+queek link (https://nwu.ac.bd/, https://academic.nwu.ac.bd/, https://study-hmh.vercel.app/, https://www.facebook.com/comptron.nwu, https://www.facebook.com/nwu.ac.bd, https://www.facebook.com/RadioNWU, https://www.facebook.com/nwucsedepartment)
+
+
+Create Footer section ( with Rights, Credit)
+Home(dynamic, customized, relevant, authentic, user-friendly)
+Routine version control system 
+
+
+Dynamic & Personalized Home Page System
+
+The system will provide a dynamic and customized home page exclusively for logged-in users.
+
+Non-logged-in users will NOT have access to the home page.
+
+For Non-Logged-In Users
+
+When a user visits the site without logging in:
+
+They will not see the home page.
+
+Instead, they will be shown a Weekly View of the Routine as the default landing page.
+
+For Logged-In Users
+
+After logging in, users will be redirected to a personalized home page.
+
+The home page will display:
+
+User-specific routine (customized content)
+
+Relevant and dynamic information based on the user
+
+Routine View Features
+
+Logged-in users will have access to:
+
+Day View Mode (on the home page)
+
+Shows routine for a specific day
+
+Clean and focused layout for daily tasks/schedule
+
+Option to switch between:
+
+Day View
+
+(Optional) Weekly View if needed
